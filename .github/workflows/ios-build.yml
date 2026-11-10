@@ -24,8 +24,16 @@ jobs:
       - name: 运行 SignKit 单元测试
         working-directory: ios/SignKit
         run: |
-          set -o pipefail
-          swift test 2>&1 | tee /tmp/test.log
+          set +e
+          swift test > /tmp/test.log 2>&1
+          STATUS=$?
+          echo "=== 错误摘要（去掉绝对路径）==="
+          grep -E "(error|warning): " /tmp/test.log \
+            | sed 's|/Users/runner/work/signdrop/signdrop/||g' \
+            | sort -u | head -60
+          echo "=== 日志尾部 ==="
+          tail -20 /tmp/test.log
+          exit $STATUS
 
       - name: 上传测试日志
         if: always()
@@ -55,7 +63,7 @@ jobs:
       - name: 编译 Release包（不签名）
         working-directory: ios
         run: |
-          set -o pipefail
+          set +e
           xcodebuild \
             -project SignKit.xcodeproj \
             -scheme SignKitApp \
@@ -65,7 +73,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            build 2>&1 | tee /tmp/build.log | tail -40
+            build > /tmp/build.log 2>&1
+          STATUS=$?
+          echo "=== 错误摘要（去掉绝对路径）==="
+          grep -E "(error|note): " /tmp/build.log \
+            | sed 's|/Users/runner/work/signdrop/signdrop/||g' \
+            | sort -u | head -80
+          echo "=== 日志尾部 ==="
+          tail -30 /tmp/build.log
+          exit $STATUS
 
       - name: 打包成未签名 IPA
         working-directory: ios

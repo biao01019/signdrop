@@ -114,12 +114,15 @@ final class CodeDirectoryTests: XCTestCase {
         let hashOffset = Int(readUInt32(blob, 16))
         XCTAssertEqual(hashOffset, 88 + 2)
 
-        let firstPage = Hash.sha256(Data(data[0..<4096]))
-        let secondPage = Hash.sha256(Data(data[4096..<5000]))
+        // 显式标注类型：Hash.sha256 同时有 Data 与 [UInt8] 两个重载，
+        // 不标注会让 XCTAssertEqual 的重载解析产生歧义。
+        let firstPage: [UInt8] = Hash.sha256([UInt8](data[0..<4096]))
+        let secondPage: [UInt8] = Hash.sha256([UInt8](data[4096..<5000]))
         XCTAssertEqual(Array(blob[hashOffset..<(hashOffset + 32)]), firstPage)
         XCTAssertEqual(Array(blob[(hashOffset + 32)..<(hashOffset + 64)]), secondPage)
         // 最后一页按实际长度计算，不做补零
-        XCTAssertNotEqual(secondPage, Hash.sha256(Data(repeating: 0x41, count: 4096)))
+        let paddedPage: [UInt8] = Hash.sha256([UInt8](repeating: 0x41, count: 4096))
+        XCTAssertNotEqual(secondPage, paddedPage)
     }
 
     func testSpecialSlotsArePaddedInReverseOrder() throws {
