@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iOS 自签名工具</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --border:#e4e6eb; --text:#111827;
+    --muted:#6b7280; --faint:#9ca3af; --accent:#0071e3; --accent-soft:#e8f2fd;
+    --ok:#0a7c42; --ok-soft:#e6f6ee; --warn:#9a6700; --warn-soft:#fff6e0;
+    --err:#b42318; --err-soft:#fdecea; --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text); font-size:14px; line-height:1.55;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:9px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-size:19px;font-weight:600;letter-spacing:-.5px}
+  h1{font-size:17px;font-weight:600;letter-spacing:-.2px}
+  .sub{font-size:12px;color:var(--muted)}
+  .pills{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{font-size:11.5px;padding:4px 9px;border-radius:20px;background:#fff;
+    border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:5px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--faint)}
+  .dot.ok{background:var(--ok)} .dot.err{background:var(--err)} .dot.warn{background:#d99400}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 20px;margin-bottom:14px}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .step{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+    font-size:12px;font-weight:600;display:grid;place-items:center;flex:none}
+  h2{font-size:14px;font-weight:600}
+  .hint{font-size:12px;color:var(--faint);margin-left:auto}
+  .note{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+  .note code{background:#f0f1f3;padding:1px 5px;border-radius:4px;font-size:11.5px}
+
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1;min-width:200px}
+  input[type=text],input[type=password],select{
+    width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;
+    font-size:13px;font-family:inherit;background:#fff;color:var(--text);outline:none}
+  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+  input[readonly]{background:#fafbfc;color:var(--muted)}
+  label.fld{display:block;margin-bottom:10px}
+  label.fld > span{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+
+  button{font-family:inherit;font-size:13px;padding:8px 15px;border-radius:7px;cursor:pointer;
+    border:1px solid var(--border);background:#fff;color:var(--text);transition:.15s}
+  button:hover{border-color:#cfd3d9;background:#fafbfc}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+  button.primary:hover{background:#0062c4}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{border:none;background:none;color:var(--accent);padding:4px 6px}
+  button.mini{padding:5px 10px;font-size:12px}
+
+  .cred{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--border);
+    border-radius:8px;margin-bottom:8px;cursor:pointer;transition:.15s}
+  .cred:hover{border-color:#cfd3d9}
+  .cred.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .cred .nm{font-weight:500;font-size:13px}
+  .cred .meta{font-size:11.5px;color:var(--muted)}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .badge.ok{background:var(--ok-soft);color:var(--ok)}
+  .badge.warn{background:var(--warn-soft);color:var(--warn)}
+  .badge.err{background:var(--err-soft);color:var(--err)}
+
+  .empty{padding:18px;text-align:center;color:var(--faint);font-size:12.5px;
+    border:1px dashed var(--border);border-radius:8px}
+
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
+    padding:12px;background:#fafbfc;border-radius:8px;margin-top:10px}
+  .info-grid div{font-size:12px;color:var(--muted)}
+  .info-grid b{display:block;color:var(--text);font-size:12.5px;font-weight:500;
+    margin-top:2px;word-break:break-all}
+
+  .bar{height:5px;background:#eceef1;border-radius:3px;overflow:hidden;margin:12px 0 8px}
+  .bar > i{display:block;height:100%;width:0;background:var(--accent);
+    border-radius:3px;transition:width .3s ease}
+  .prog-msg{font-size:12.5px;color:var(--muted)}
+
+  .result{border:1px solid var(--ok-soft);background:var(--ok-soft);border-radius:8px;
+    padding:12px 14px;margin-top:12px;font-size:12.5px;color:#0a5c33}
+  .result.fail{border-color:var(--err-soft);background:var(--err-soft);color:var(--err)}
+  .result b{font-weight:600}
+  .path{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;word-break:break-all;
+    color:var(--muted);margin-top:4px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-weight:500;color:var(--muted);font-size:11.5px;
+    padding:0 8px 8px;border-bottom:1px solid var(--border)}
+  td{padding:9px 8px;border-bottom:1px solid #f1f2f4;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+
+  details.settings{border:1px solid var(--border)}
+  details.settings > summary{cursor:pointer;padding:14px 18px;font-size:13px;
+    font-weight:500;list-style:none;display:flex;align-items:center;gap:8px}
+  details.settings > summary::-webkit-details-marker{display:none}
+  details.settings > summary::before{content:"›";font-size:15px;color:var(--faint);
+    transition:transform .2s;display:inline-block}
+  details.settings[open] > summary::before{transform:rotate(90deg)}
+  details.settings .body{padding:0 18px 18px}
+
+  .warn-box{background:var(--warn-soft);border:1px solid #f0dca8;color:#7a5200;
+    padding:11px 13px;border-radius:8px;font-size:12.5px;margin-bottom:14px}
+
+  .modal{position:fixed;inset:0;background:rgba(17,24,39,.4);display:none;
+    align-items:center;justify-content:center;padding:24px;z-index:50}
+  .modal.on{display:flex}
+  .modal-box{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:80vh;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+  .modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;
+    align-items:center;gap:10px;font-size:13px}
+  .modal-head .path{flex:1;margin:0;font-size:11.5px}
+  .modal-list{overflow:auto;flex:1;padding:6px}
+  .fitem{padding:8px 12px;border-radius:6px;cursor:pointer;display:flex;
+    align-items:center;gap:9px;font-size:13px}
+  .fitem:hover{background:#f4f5f7}
+  .fitem .sz{margin-left:auto;font-size:11px;color:var(--faint)}
+  .ficon{width:16px;height:16px;border-radius:3px;background:#e8eaed;flex:none}
+  .ficon.dir{background:#dbeafe}
+
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.25s;max-width:min(620px,90vw);z-index:80;white-space:pre-wrap}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">i</div>
+      <div>
+        <h1>iOS 自签名工具</h1>
+        <div class="sub">用你自己的 Apple ID 给 IPA 签名</div>
+      </div>
+    </div>
+    <div class="pills" id="pills"></div>
+  </header>
+
+  <section class="card">
+    <div class="card-head"><span class="step">1</span><h2>签名凭证</h2>
+      <span class="hint" id="credHint"></span></div>
+    <p class="note">
+      需要两个文件：开发证书 <code>.p12</code> 和描述文件 <code>.mobileprovision</code>。
+      在 <a href="https://developer.apple.com/account/resources/certificates" target="_blank" rel="noreferrer">developer.apple.com</a>
+      生成，导出时设的密码填在下面。
+    </p>
+    <div id="credList"></div>
+    <details class="settings" style="margin-top:10px">
+      <summary>导入新凭证</summary>
+      <div class="body">
+        <label class="fld"><span>证书文件 .p12</span>
+          <div class="row">
+            <input type="text" id="p12Path" class="grow" placeholder="点右侧按钮选择">
+            <button class="mini" onclick="pick('p12', p=>$('#p12Path').value=p)">选择</button>
+          </div>
+        </label>
+        <label class="fld"><span>p12 密码</span>
+          <input type="password" id="p12Pass" placeholder="导出证书时设置的密码">
+        </label>
+        <label class="fld"><span>描述文件 .mobileprovision</span>
+          <div class="row">
+            <input type="text" id="profilePath" class="grow" placeholder="点右侧按钮选择">
+            <button class="mini" onclick="pick('mobileprovision', p=>$('#profilePath').value=p)">选择</button>
+          </div>
+        </label>
+        <label class="fld"><span>备注（可选）</span>
+          <input type="text" id="credLabel" placeholder="比如：我的开发证书">
+        </label>
+        <button class="primary" id="importBtn">导入</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><span class="step">2</span><h2>选择 IPA</h2></div>
+    <div class="row">
+      <input type="text" id="ipaPath" class="grow" readonly placeholder="选择一个 .ipa 文件">
+      <button onclick="pick('ipa', p=>selectIpa(p))">选择文件</button>
+    </div>
+    <div id="ipaInfo"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><span class="step">3</span><h2>签名</h2></div>
+    <label class="fld"><span>显示名称（留空保持原样）</span>
+      <input type="text" id="displayName" placeholder="比如：微信-工作号">
+    </label>
+    <label class="fld"><span>Bundle ID（想装第二个副本就改这里，留空保持原样）</span>
+      <input type="text" id="bundleId" placeholder="com.example.app">
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:14px">
+      <input type="checkbox" id="stripExt" checked style="width:15px;height:15px">
+      移除扩展与小组件（免费账号更不容易签名失败，推荐勾选）
+    </label>
+    <button class="primary" id="signBtn">开始签名</button>
+    <div id="signProg" style="display:none">
+      <div class="bar"><i id="signBar"></i></div>
+      <div class="prog-msg" id="signMsg"></div>
+    </div>
+    <div id="signResult"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><span class="step">4</span><h2>已签名的包</h2>
+      <span class="hint">装到设备后 7 天后需重签（付费账号 1 年）</span></div>
+    <div id="appList"></div>
+  </section>
+
+  <details class="settings card" id="settingsCard">
+    <summary>设置</summary>
+    <div class="body">
+      <label class="fld" style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
+        <input type="checkbox" id="mockMode" style="width:15px;height:15px">
+        <span style="margin:0;font-size:12.5px;color:var(--text)">演示模式（不真签名，只跑流程看界面）</span>
+      </label>
+      <label class="fld"><span>zsign 路径（留空自动查找 tools/ 目录）</span>
+        <input type="text" id="zsignPath" placeholder="例如 D:\tools\zsign.exe">
+      </label>
+      <label class="fld"><span>Anisette 服务地址（仅 Apple ID 一键登录需要）</span>
+        <input type="text" id="anisetteUrl" placeholder="https://ani.sidestore.io">
+      </label>
+      <button class="primary" id="saveSettings">保存设置</button>
+    </div>
+  </details>
+
+  <details class="settings card">
+    <summary>Apple ID 一键登录 <span class="badge warn" style="margin-left:6px">实验性</span></summary>
+    <div class="body">
+      <div class="warn-box">
+        这条路径调用苹果未公开接口，随时可能失效，且失败信息往往不明确。
+        日常使用建议走上面的「手动证书」模式 —— 一样是你自己的账号，但稳定得多。
+      </div>
+      <label class="fld"><span>Apple ID</span>
+        <input type="text" id="appleId" placeholder="you@example.com" autocomplete="off">
+      </label>
+      <label class="fld"><span>密码</span>
+        <input type="password" id="applePass" placeholder="只在本机参与 SRP 计算，不上传" autocomplete="off">
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:14px">
+        <input type="checkbox" id="rememberPass" style="width:15px;height:15px">
+        记住密码（用本机密钥加密后存本地）
+      </label>
+      <div class="row">
+        <button class="primary" id="loginBtn">登录</button>
+        <input type="text" id="twofa" placeholder="两步验证码" style="width:150px;display:none">
+        <button id="twofaBtn" style="display:none">提交</button>
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="modal" id="picker">
+  <div class="modal-box">
+    <div class="modal-head">
+      <button class="ghost mini" onclick="pickUp()">上一级</button>
+      <span class="path" id="pickPath"></span>
+      <button class="ghost mini" onclick="closePicker()">关闭</button>
+    </div>
+    <div class="modal-list" id="pickList"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { status:null, creds:[], credId:null, ipa:null, apps:[], devices:[], jobTimer:null };
+
+async function api(path, opt={}) {
+  const res = await fetch(path, { headers:{'Content-Type':'application/json'}, ...opt });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { const j = await res.json(); msg = j.detail || msg; } catch {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('on'), 4200);
+}
+const fmtSize = n => n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.round(n/1024)+' KB';
+
+/* ---------- 状态 ---------- */
+async function loadStatus() {
+  const s = await api('/api/status');
+  state.status = s;
+  const pills = [];
+  pills.push(`<span class="pill"><i class="dot ${s.mock_mode?'warn':'ok'}"></i>${s.mock_mode?'演示模式':'正式模式'}</span>`);
+  pills.push(`<span class="pill"><i class="dot ${s.zsign_path?'ok':'err'}"></i>${s.zsign_path?'zsign 就绪':'缺少 zsign'}</span>`);
+  pills.push(`<span class="pill"><i class="dot ${s.has_pymobiledevice3?'ok':'warn'}"></i>${s.has_pymobiledevice3?'USB 可用':'USB 未启用'}</span>`);
+  if (s.account) pills.push(`<span class="pill"><i class="dot ok"></i>${s.account.apple_id}</span>`);
+  $('#pills').innerHTML = pills.join('');
+  $('#mockMode').checked = s.mock_mode;
+  $('#zsignPath').value = s.zsign_path;
+  $('#anisetteUrl').value = s.anisette_url;
+}
+
+/* ---------- 凭证 ---------- */
+async function loadCreds() {
+  state.creds = await api('/api/credentials');
+  const box = $('#credList');
+  if (!state.creds.length) {
+    box.innerHTML = `<div class="empty">还没有凭证。展开下面「导入新凭证」，把 .p12 和 .mobileprovision 加进来。</div>`;
+    $('#credHint').textContent = '';
+    return;
+  }
+  if (!state.creds.some(c => c.id === state.credId)) state.credId = state.creds[0].id;
+  const badge = c => {
+    if (c.state === 'broken') return `<span class="badge err">文件缺失</span>`;
+    if (c.state === 'expired') return `<span class="badge err">已过期</span>`;
+    if (c.state === 'expiring') return `<span class="badge warn">${c.days_left} 天后过期</span>`;
+    return `<span class="badge ok">${c.days_left} 天有效</span>`;
+  };
+  box.innerHTML = state.creds.map(c => `
+    <div class="cred ${c.id===state.credId?'sel':''}" onclick="state.credId=${c.id};loadCreds()">
+      <div style="flex:1">
+        <div class="nm">${esc(c.label)}</div>
+        <div class="meta">${esc(c.team_id||'未知团队')} · ${c.device_count} 台设备已注册</div>
+      </div>
+      ${badge(c)}
+      <button class="ghost mini" onclick="event.stopPropagation();delCred(${c.id})">移除</button>
+    </div>`).join('');
+  const cur = state.creds.find(c => c.id === state.credId);
+  $('#credHint').textContent = cur ? `当前：${cur.label}` : '';
+}
+async function delCred(id) {
+  try { await api('/api/credentials/'+id, {method:'DELETE'}); await loadCreds(); }
+  catch (e) { toast(e.message); }
+}
+$('#importBtn').onclick = async () => {
+  const body = {
+    p12_path: $('#p12Path').value.trim(),
+    p12_password: $('#p12Pass').value,
+    profile_path: $('#profilePath').value.trim(),
+    label: $('#credLabel').value.trim(),
+  };
+  if (!body.p12_path || !body.profile_path) return toast('请先选择 p12 和描述文件');
+  try {
+    await api('/api/credentials', {method:'POST', body:JSON.stringify(body)});
+    $('#p12Pass').value=''; $('#p12Path').value=''; $('#profilePath').value=''; $('#credLabel').value='';
+    await loadCreds(); toast('凭证导入成功');
+  } catch (e) { toast(e.message); }
+};
+
+/* ---------- IPA ---------- */
+async function selectIpa(path) {
+  $('#ipaPath').value = path;
+  $('#ipaInfo').innerHTML = '';
+  try {
+    const info = await api('/api/ipa/inspect', {method:'POST', body:JSON.stringify({path})});
+    state.ipa = {path, ...info};
+    $('#ipaInfo').innerHTML = `
+      <div class="info-grid">
+        <div>应用名称<b>${esc(info.display_name)}</b></div>
+        <div>Bundle ID<b>${esc(info.bundle_id)}</b></div>
+        <div>版本<b>${esc(info.version)}</b></div>
+        <div>包大小<b>${fmtSize(info.size)}</b></div>
+        <div>含嵌套包<b>${info.nested_bundles} 个</b></div>
+        <div>最低系统<b>${esc(info.min_os||'未知')}</b></div>
+      </div>`;
+    if (info.nested_bundles > 0) $('#stripExt').checked = true;
+  } catch (e) { toast(e.message); }
+}
+
+/* ---------- 签名 ---------- */
+$('#signBtn').onclick = async () => {
+  if (!state.ipa) return toast('请先选择 IPA');
+  if (!state.credId) return toast('请先导入并选择签名凭证');
+  const btn = $('#signBtn');
+  btn.disabled = true;
+  $('#signResult').innerHTML = '';
+  $('#signProg').style.display = 'block';
+  $('#signBar').style.width = '3%';
+  $('#signMsg').textContent = '提交任务…';
+  try {
+    const { job_id } = await api('/api/sign', {method:'POST', body: JSON.stringify({
+      ipa_path: state.ipa.path,
+      credential_id: state.credId,
+      bundle_id: $('#bundleId').value.trim(),
+      display_name: $('#displayName').value.trim(),
+      strip_extensions: $('#stripExt').checked,
+    })});
+    pollJob(job_id, {
+      onTick: j => { $('#signBar').style.width = Math.max(3,j.progress)+'%'; $('#signMsg').textContent = j.message||''; },
+      onDone: r => {
+        $('#signBar').style.width = '100%';
+        $('#signMsg').textContent = '签名完成';
+        $('#signResult').innerHTML = `
+          <div class="result">
+            <b>${r.mock?'已生成改写包（未真签名）':'签名成功'}</b> · ${esc(r.display_name)} ·
+            ${esc(r.bundle_id)} · 剩余 ${r.days_left} 天
+            ${r.stripped_bundles?.length ? `<br>已移除的嵌套包：${esc(r.stripped_bundles.join('、'))}` : ''}
+            <div class="path">${esc(r.signed_path)}</div>
+          </div>`;
+        loadApps();
+      },
+      onFail: msg => {
+        $('#signBar').style.width = '100%';
+        $('#signMsg').textContent = '签名失败';
+        $('#signResult').innerHTML = `<div class="result fail"><b>签名失败</b><div style="margin-top:6px;white-space:pre-wrap">${esc(msg)}</div></div>`;
+      },
+      onEnd: () => { btn.disabled = false; }
+    });
+  } catch (e) {
+    btn.disabled = false; $('#signProg').style.display='none'; toast(e.message);
+  }
+};
+
+function pollJob(id, h) {
+  clearInterval(state.jobTimer);
+  state.jobTimer = setInterval(async () => {
+    try {
+      const j = await api('/api/jobs/'+id);
+      h.onTick?.(j);
+      if (j.status === 'done') { clearInterval(state.jobTimer); h.onDone?.(j.result||{}); h.onEnd?.(); }
+      else if (j.status === 'failed') { clearInterval(state.jobTimer); h.onFail?.(j.message||'未知错误'); h.onEnd?.(); }
+    } catch (e) { clearInterval(state.jobTimer); h.onFail?.(e.message); h.onEnd?.(); }
+  }, 700);
+}
+
+/* ---------- 应用列表 ---------- */
+async function loadApps() {
+  state.apps = await api('/api/apps');
+  await loadDevices();
+  const box = $('#appList');
+  if (!state.apps.length) {
+    box.innerHTML = `<div class="empty">签名过的包会出现在这里</div>`;
+    return;
+  }
+  const devOptions = state.devices.map(d =>
+    `<option value="${esc(d.udid)}">${esc(d.name)}</option>`).join('');
+  box.innerHTML = `<table><thead><tr>
+      <th>应用</th><th>Bundle ID</th><th>状态</th><th>安装到</th><th></th>
+    </tr></thead><tbody>
+    ${state.apps.map(a => `<tr>
+      <td><b>${esc(a.name||'-')}</b><div style="color:var(--faint);font-size:11px">${esc(a.version||'')}</div></td>
+      <td style="font-size:11.5px;color:var(--muted)">${esc(a.bundle_id)}</td>
+      <td><span class="badge ${a.status==='installed'?'ok':'warn'}">${a.status==='installed'?'已安装':'已签名'}</span></td>
+      <td>${devOptions ? `<select id="dev-${a.id}" style="width:130px;padding:5px 8px;font-size:12px">${devOptions}</select>` : '<span style="color:var(--faint);font-size:11.5px">无设备</span>'}</td>
+      <td style="text-align:right"><button class="mini" onclick="doInstall(${a.id})" ${devOptions?'':'disabled'}>安装</button></td>
+    </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function doInstall(appId) {
+  const sel = $('#dev-'+appId);
+  if (!sel) return toast('没有可用设备，先连接 iPhone 或手动添加 UDID');
+  try {
+    const { job_id } = await api(`/api/apps/${appId}/install`, {method:'POST', body:JSON.stringify({udid: sel.value})});
+    toast('正在安装…');
+    pollJob(job_id, {
+      onDone: () => { toast('安装完成'); loadApps(); },
+      onFail: m => toast(m)
+    });
+  } catch (e) { toast(e.message); }
+}
+
+/* ---------- 设备 ---------- */
+async function loadDevices() {
+  try {
+    const d = await api('/api/devices');
+    const seen = new Map();
+    [...d.saved, ...d.usb].forEach(x => seen.set(x.udid, x));
+    state.devices = [...seen.values()];
+  } catch { state.devices = []; }
+}
+
+/* ---------- 文件选择器 ---------- */
+let pickCb = null, pickExt = 'ipa', pickCwd = '';
+function pick(ext, cb) {
+  pickCb = cb; pickExt = ext; pickCwd = '';
+  $('#picker').classList.add('on');
+  loadPicker('');
+}
+async function loadPicker(path) {
+  try {
+    const d = await api(`/api/fs?path=${encodeURIComponent(path)}&ext=${pickExt}`);
+    pickCwd = d.cwd;
+    $('#pickPath').textContent = d.cwd;
+    const items = d.entries.map(e => `
+      <div class="fitem" onclick="${e.type==='dir'?`loadPicker('${esc(e.path).replace(/\\/g,'\\\\')}')`:`choose('${esc(e.path).replace(/\\/g,'\\\\')}')`}">
+        <span class="ficon ${e.type==='dir'?'dir':''}"></span>
+        <span>${esc(e.name)}</span>
+        ${e.size?`<span class="sz">${fmtSize(e.size)}</span>`:''}
+      </div>`).join('');
+    $('#pickList').innerHTML = items || `<div class="empty" style="margin:12px">这个目录里没有 .${pickExt} 文件</div>`;
+  } catch (e) { toast(e.message); }
+}
+function pickUp() {
+  if (!pickCwd) return;
+  const p = pickCwd.replace(/[\\/][^\\/]+$/, '') || pickCwd;
+  loadPicker(p);
+}
+function choose(path) { pickCb?.(path); closePicker(); }
+function closePicker() { $('#picker').classList.remove('on'); pickCb = null; }
+
+/* ---------- 设置与登录 ---------- */
+$('#saveSettings').onclick = async () => {
+  try {
+    await api('/api/settings', {method:'POST', body:JSON.stringify({
+      mock_mode: $('#mockMode').checked,
+      zsign_path: $('#zsignPath').value.trim(),
+      anisette_url: $('#anisetteUrl').value.trim(),
+    })});
+    await loadStatus(); toast('设置已保存');
+  } catch (e) { toast(e.message); }
+};
+
+$('#loginBtn').onclick = async () => {
+  const apple_id = $('#appleId').value.trim(), password = $('#applePass').value;
+  if (!apple_id || !password) return toast('请填写 Apple ID 和密码');
+  try {
+    const r = await api('/api/login', {method:'POST', body:JSON.stringify({
+      apple_id, password, remember: $('#rememberPass').checked
+    })});
+    if (r.stage === 'two_factor') {
+      $('#twofa').style.display = 'inline-block';
+      $('#twofaBtn').style.display = 'inline-block';
+      toast('需要两步验证码，请查看你的设备');
+    } else {
+      toast('登录成功'); loadStatus();
+    }
+  } catch (e) { toast(e.message); }
+};
+$('#twofaBtn').onclick = async () => {
+  try {
+    await api('/api/login/code', {method:'POST', body:JSON.stringify({code:$('#twofa').value.trim()})});
+    toast('登录成功'); loadStatus();
+  } catch (e) { toast(e.message); }
+};
+
+/* ---------- 杂项 ---------- */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+(async function init() {
+  try {
+    await loadStatus();
+    await loadCreds();
+    await loadApps();
+  } catch (e) {
+    const box = document.createElement('div');
+    box.className = 'card';
+    box.innerHTML = `<div class="warn-box" style="margin:0">
+      <b>连不上后端服务</b><br>
+      页面能打开但接口没响应，说明服务没在运行。在项目目录执行
+      <code style="background:#fff8e6;padding:1px 5px;border-radius:4px">python run.py</code>
+      后刷新本页即可。<br>
+      <span style="opacity:.75">${esc(e.message)}</span>
+    </div>`;
+    document.querySelector('.wrap').prepend(box);
+  }
+})();
+</script>
+</body>
+</html>

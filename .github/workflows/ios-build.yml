@@ -1,0 +1,110 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-build.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 核心逻辑测试
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 查看 Swift 版本
+        run: swift --version
+
+      - name: 运行 SignKit 单元测试
+        working-directory: ios/SignKit
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee /tmp/test.log
+
+      - name: 上传测试日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: /tmp/test.log
+
+  build:
+    name: 编译并打包未签名 IPA
+    runs-on: macos-14
+    needs: test
+    # 测试失败也继续编译：界面能装进手机先验证，签名引擎的问题单独修
+    if: always()
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 生成 Xcode 工程
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: 编译 Release包（不签名）
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project SignKit.xcodeproj \
+            -scheme SignKitApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            build 2>&1 | tee /tmp/build.log | tail -40
+
+      - name: 打包成未签名 IPA
+        working-directory: ios
+        run: |
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "产物：$APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "没有找到 .app，编译失败"
+            exit 1
+          fi
+          rm -rf Payload SignKit-unsigned.ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -qry SignKit-unsigned.ipa Payload
+          ls -lh SignKit-unsigned.ipa
+
+      - name: 上传 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SignKit-unsigned-ipa
+          path: ios/SignKit-unsigned.ipa
+
+      - name: 上传编译日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: /tmp/build.log
+
+      # 把 IPA 挂到 Release 上，得到一个可以直接点开的下载地址：
+      # https://github.com/<你的账号>/<仓库>/releases/download/latest/SignKit-unsigned.ipa
+      - name: 发布到 Release（直链下载）
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: ios
+        run: |
+          gh release view latest >/dev/null 2>&1 \
+            || gh release create latest --title "最新构建" --notes "CI 自动构建的未签名 IPA，用 Sideloadly / AltStore / SideStore 自签安装。"
+          gh release upload latest SignKit-unsigned.ipa --clobber
+          echo "下载地址：${{ github.server_url }}/${{ github.repository }}/releases/download/latest/SignKit-unsigned.ipa"
+

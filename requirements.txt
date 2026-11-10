@@ -1,0 +1,8 @@
+# 必需
+fastapi>=0.110
+uvicorn>=0.27
+cryptography>=42
+
+# 可选：装了这个才能通过 USB 直接安装到设备
+# pip install pymobiledevice3
+pymobiledevice3>=4.0

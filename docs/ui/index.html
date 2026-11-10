@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Signdrop · UI 1:1 复刻预览</title>
+<style>
+  :root{
+    --bg:#F1F1F6;
+    --card:#FFFFFF;
+    --blue:#0079FF;
+    --ink:#1B1B1D;
+    --sub:#8A8A8E;
+    --ter:#A7A7AE;
+    --div:#F0F0F2;
+    --tint:#E9F1FF;
+    --chip:#E6E6EC;
+    --green:#33C758;
+    --greenT:#21A24A;
+    --greenB:#E7F7EC;
+    --orange:#FF9400;
+    --orangeT:#C37500;
+    --orangeB:#FFF6E6;
+    --red:#D93B2E;
+    --redB:#FFECE9;
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;padding:0;background:#E4E5EA;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+  }
+  .stage{display:flex;flex-wrap:wrap;gap:40px;padding:40px;}
+  .frame{position:relative;}
+  .frame > .cap{
+    font:500 12px/1 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:#8A8A8E;margin:0 0 8px 2px;letter-spacing:.2px;
+  }
+  .phone{
+    position:relative;width:393px;height:852px;background:var(--bg);
+    overflow:hidden;border-radius:2px;
+  }
+
+  /* ---------- 状态栏 ---------- */
+  .statusbar{position:absolute;inset:0 0 auto 0;height:54px;}
+  .statusbar .time{
+    position:absolute;left:27px;top:16px;
+    font:600 15px/1 -apple-system,"SF Pro Text","PingFang SC",sans-serif;
+    letter-spacing:.1px;color:var(--ink);
+  }
+  .statusbar .glyphs{position:absolute;right:18px;top:19px;display:flex;align-items:center;gap:5px;color:#1B1B1D;}
+  .homebar{
+    position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+    width:134px;height:5px;border-radius:3px;background:#1B1B1D;
+  }
+
+  /* ---------- 通用 ---------- */
+  .bigtitle{
+    position:absolute;left:16px;top:60px;
+    font:700 32px/38px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    letter-spacing:-.3px;color:var(--ink);
+  }
+  .card{
+    position:absolute;left:16px;width:361px;background:var(--card);
+    border-radius:20px;box-shadow:0 2px 10px rgba(20,20,30,.045);
+  }
+  .sec{
+    position:absolute;left:20px;right:20px;
+    font:400 13px/16px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--sub);
+  }
+  .sec .r{position:absolute;right:0;top:0;color:var(--ter);}
+  .iconbox{
+    width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:var(--tint);color:var(--blue);flex:0 0 auto;
+  }
+  .badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:20.6px;padding:0 7px;border-radius:7px;
+    font:500 11px/1 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .badge.ok{background:var(--greenB);color:var(--greenT);}
+  .badge.warn{background:var(--orangeB);color:var(--orangeT);}
+  .badge.danger{background:var(--redB);color:var(--red);}
+  .badge.blue{background:var(--tint);color:var(--blue);}
+  /* 正文层级：按设计稿实测（约为 iOS 标准字号的 0.89 倍） */
+  .t17{font:600 15px/20px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:-.1px;}
+  .t15{font:400 14px/19px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .t13{font:400 12px/16px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .t13s{font:600 12px/16px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .dim{color:var(--sub);}
+  .bar{height:6px;border-radius:3px;background:#E9E9EF;overflow:hidden;}
+  .bar > i{display:block;height:100%;border-radius:3px;background:var(--blue);}
+  .chev{color:#C4C4C6;}
+  .divider{height:1.4px;background:var(--div);}
+  .roundbtn{
+    position:absolute;width:34px;height:34px;border-radius:50%;background:var(--chip);
+    display:flex;align-items:center;justify-content:center;color:#3A3A3C;
+  }
+
+  /* ---------- 悬浮 Tab Bar ---------- */
+  .tabbar{
+    position:absolute;left:12px;top:770px;width:369px;height:60px;border-radius:30px;
+    background:#fff;box-shadow:0 6px 20px rgba(20,20,30,.09);
+    display:flex;align-items:center;padding:0 13.4px;
+  }
+  .tabbar .item{
+    flex:0 0 85.4px;height:53.3px;border-radius:27px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;color:var(--sub);
+    font:500 10px/12px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .tabbar .item.on{background:var(--blue);color:#fff;}
+  .tabbar .item svg{display:block;}
+
+  /* ---------- P1 我的应用 ---------- */
+  .appcard{top:291px;height:353.6px;overflow:hidden;}
+  .approw{position:absolute;left:0;width:361px;height:69.6px;}
+  .approw .glyph{
+    position:absolute;left:16px;top:10.8px;width:48px;height:48px;border-radius:13px;
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .approw .name{position:absolute;left:76.6px;top:18.5px;}
+  .approw .meta{position:absolute;left:76.6px;top:38.7px;}
+  .approw .tail{position:absolute;right:16px;top:24px;}
+  .approw .tail.chevtop{top:25px;}
+  .fab{
+    position:absolute;left:321px;top:681.4px;width:56px;height:56px;border-radius:50%;
+    background:var(--blue);box-shadow:0 8px 20px rgba(0,121,255,.32);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+
+  /* ---------- 导航（二级页） ---------- */
+  .nav{position:absolute;left:16px;right:16px;top:0;height:132px;}
+  .nav .title{
+    position:absolute;left:16px;right:16px;top:77px;text-align:center;
+    font:600 16px/21px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:-.2px;
+  }
+  .nav .back{
+    position:absolute;left:16px;top:70px;width:32px;height:32px;border-radius:50%;
+    background:var(--chip);display:flex;align-items:center;justify-content:center;color:#3A3A3C;
+  }
+  .nav .lead{position:absolute;left:16px;top:78px;font:400 16px/21px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--blue);}
+
+  /* ---------- P2 应用详情 ---------- */
+  .hero{position:absolute;left:16px;top:114px;}
+  .hero .appicon{width:84px;height:84px;border-radius:20px;display:flex;align-items:center;justify-content:center;}
+  .hero .name{position:absolute;left:98px;top:-2px;white-space:nowrap;font:700 21px/26px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:-.5px;}
+  .hero .meta{position:absolute;left:98px;top:33px;}
+  .hero .tags{position:absolute;left:98px;top:57px;display:flex;gap:6px;}
+  .btn{
+    position:absolute;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font:600 16px/22px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .btn.primary{background:var(--blue);color:#fff;}
+  .btn.ghost{background:#fff;color:var(--red);box-shadow:0 2px 10px rgba(20,20,30,.045);}
+  .logrow{position:absolute;left:0;width:361px;height:57.6px;}
+  .logrow .dot{position:absolute;left:20px;top:22px;width:7px;height:7px;border-radius:50%;}
+  .logrow .ttl{position:absolute;left:38px;top:12px;}
+  .logrow .sub{position:absolute;left:38px;top:31px;}
+  .logrow .date{position:absolute;right:20px;top:18px;}
+
+  /* ---------- P3 签名配置 ---------- */
+  .kvrow{position:absolute;left:16px;right:16px;height:42px;display:flex;align-items:center;}
+  .kvrow > span:last-child{margin-left:auto;}
+  .row46{position:absolute;left:16px;right:16px;height:46px;display:flex;align-items:center;}
+  .row46 .l{flex:1 1 auto;}
+  .row46 .r{flex:0 0 auto;color:var(--sub);}
+  .switch{
+    width:50.4px;height:30.7px;border-radius:16px;background:#E9E9EC;position:relative;
+    flex:0 0 auto;transition:none;
+  }
+  .switch.on{background:var(--green);}
+  .switch i{
+    position:absolute;top:2.2px;left:2.2px;width:26.3px;height:26.3px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18);
+  }
+  .switch.on i{left:auto;right:2.2px;}
+  .footnote{
+    position:absolute;left:16px;right:16px;text-align:center;
+    font:400 13px/17px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ter);
+  }
+
+  /* ---------- P4 证书 ---------- */
+  .certrow{position:absolute;left:0;width:361px;height:112.3px;}
+  .certrow .iconbox{position:absolute;left:16px;top:14px;}
+  .certrow .ttl{position:absolute;left:68px;top:14px;}
+  .certrow .sub{position:absolute;left:68px;top:39px;}
+  .certrow .right{position:absolute;right:16px;top:39px;}
+  .certrow .bar{position:absolute;left:16px;right:16px;top:74px;}
+  .devrow{position:absolute;left:0;width:361px;height:58.3px;}
+  .devrow .ico{position:absolute;left:16px;top:16px;color:#1B1B1D;}
+  .devrow .ttl{position:absolute;left:56px;top:9px;}
+  .devrow .sub{position:absolute;left:56px;top:28px;}
+  .devrow .tail{position:absolute;right:16px;top:18px;}
+
+  /* ---------- P5 任务 ---------- */
+  .steprow{position:absolute;left:0;width:361px;height:34.4px;}
+  .steprow .ico{position:absolute;left:16px;top:3px;}
+  .steprow .lbl{position:absolute;left:48px;top:5px;}
+  .steprow .st{position:absolute;right:20px;top:6px;}
+
+  /* ---------- P6 设置 ---------- */
+  .setrow{position:absolute;left:16px;right:16px;height:53.9px;display:flex;align-items:center;}
+  .setrow .l{flex:1 1 auto;}
+  .setrow .tag{flex:0 0 18px;display:flex;justify-content:flex-end;}
+  .setrow .v{color:var(--sub);}
+  .kv{position:absolute;left:16px;right:16px;height:44px;display:flex;align-items:center;}
+  .kv .k{flex:1 1 auto;color:var(--sub);}
+  .kv .val{color:var(--ink);}
+
+  /* ---------- P7 登录 ---------- */
+  .fieldrow{position:absolute;left:0;width:344px;height:50px;display:flex;align-items:center;gap:12px;padding:0 16px;}
+  .fieldrow .ph{flex:1 1 auto;color:var(--ink);}
+  .apple{background:#17171A;color:#fff;}
+
+  /* 图标容器渐变 */
+  .g-purple{background:linear-gradient(135deg,#5769FC 0%,#805AF6 100%);}
+  .g-orange{background:linear-gradient(135deg,#FFB44D 0%,#FF5F52 100%);}
+  .g-teal{background:linear-gradient(135deg,#20B5A4 0%,#2688D9 100%);}
+  .g-amber{background:linear-gradient(135deg,#FFC24B 0%,#FB8A2E 100%);}
+  .g-green{background:linear-gradient(135deg,#3BD37A 0%,#12A96A 100%);}
+  .g-avatar{background:linear-gradient(135deg,#6D6AF8 0%,#9B5CF6 100%);}
+</style>
+</head>
+<body>
+<div class="stage">
+
+<!-- ============ P1 我的应用 ============ -->
+<div class="frame"><div class="cap">01 · 我的应用</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="bigtitle">我的应用</div>
+  <div class="roundbtn" style="left:300.9px;top:67.2px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 20 20"/></svg>
+  </div>
+  <div class="roundbtn" style="left:343.1px;top:67.2px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+  </div>
+
+  <!-- 证书卡片 -->
+  <div class="card" style="top:122.4px;height:116.6px">
+    <div class="iconbox" style="position:absolute;left:16px;top:14px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.8 5.6v6.1c0 4.3 3 8.2 7.2 9.5 4.2-1.3 7.2-5.2 7.2-9.5V5.6L12 2.8Z"/><path d="m8.9 11.9 2.2 2.2 4-4.3"/></svg>
+    </div>
+    <div class="t17" style="position:absolute;left:68px;top:14px">个人开发者证书</div>
+    <div class="t13 dim" style="position:absolute;left:68px;top:38px">Team 8F2K9D · 2027年3月12日到期</div>
+    <div class="badge ok" style="position:absolute;right:16px;top:15px">有效</div>
+    <div class="bar" style="position:absolute;left:16px;right:16px;top:68px"><i style="width:62%"></i></div>
+    <div class="t13 dim" style="position:absolute;left:16px;top:86px">剩余 123 天</div>
+    <div class="t13s" style="position:absolute;right:16px;top:86px;color:var(--blue)">管理证书</div>
+  </div>
+
+  <div class="sec" style="top:258.8px">已安装应用<span class="r">5 个</span></div>
+
+  <!-- 应用列表 -->
+  <div class="card appcard">
+    <div class="approw" style="top:0">
+      <div class="glyph g-purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="6" width="16" height="2.5" rx="1.25"/><rect x="4" y="11" width="12.5" height="2.5" rx="1.25"/><rect x="4" y="16" width="8" height="2.5" rx="1.25"/></svg></div>
+      <div class="name t17">Quantum Notes</div>
+      <div class="meta t13 dim">v2.4.1 · 剩余 87 天</div>
+      <div class="tail chevtop"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></div>
+    </div>
+    <div class="divider" style="position:absolute;top:69.6px;left:0;right:0"></div>
+    <div class="approw" style="top:71px">
+      <div class="glyph g-orange"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 5.4a1.2 1.2 0 0 1 1.83-1.02l8.1 5.6a1.2 1.2 0 0 1 0 2.04l-8.1 5.6A1.2 1.2 0 0 1 8.5 16.6V5.4Z"/></svg></div>
+      <div class="name t17">Muse Player</div>
+      <div class="meta t13 dim">v1.8.0 · 剩余 21 天</div>
+      <div class="tail"><span class="badge warn">即将到期</span></div>
+    </div>
+    <div class="divider" style="position:absolute;top:140.6px;left:0;right:0"></div>
+    <div class="approw" style="top:142px">
+      <div class="glyph g-teal"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></div>
+      <div class="name t17">Grid Wallet</div>
+      <div class="meta t13 dim">v3.0.2 · 已过期 2 天</div>
+      <div class="tail"><span class="badge danger">需要重签</span></div>
+    </div>
+    <div class="divider" style="position:absolute;top:211.6px;left:0;right:0"></div>
+    <div class="approw" style="top:213px">
+      <div class="glyph g-amber"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5.6C10.8 4.5 9.2 4 7.3 4c-1 0-2 .15-2.9.45v13.1c.9-.3 1.9-.45 2.9-.45 1.9 0 3.5.5 4.7 1.6 1.2-1.1 2.8-1.6 4.7-1.6 1 0 2 .15 2.9.45V4.45A10.6 10.6 0 0 0 16.7 4c-1.9 0-3.5.5-4.7 1.6Z" opacity=".95"/></svg></div>
+      <div class="name t17">Lumen Reader</div>
+      <div class="meta t13 dim">v5.1.4 · 剩余 87 天</div>
+      <div class="tail chevtop"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></div>
+    </div>
+    <div class="divider" style="position:absolute;top:282.6px;left:0;right:0"></div>
+    <div class="approw" style="top:284px">
+      <div class="glyph g-green"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="5.5" y="3" width="13" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="8.6" y="6.2" width="6.8" height="3.2" rx="1"/><circle cx="9.6" cy="13" r="1.25"/><circle cx="14.4" cy="13" r="1.25"/><circle cx="9.6" cy="17.4" r="1.25"/><circle cx="14.4" cy="17.4" r="1.25"/></svg></div>
+      <div class="name t17">Aurora Calc</div>
+      <div class="meta t13 dim">v1.2.3 · 剩余 45 天</div>
+      <div class="tail chevtop"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="fab">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </div>
+
+  <div class="tabbar">
+    <div class="item on">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg>
+      <span>应用</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.9 5.2 5.6v6c0 4.1 2.8 7.9 6.8 9.2 4-1.3 6.8-5.1 6.8-9.2v-6L12 2.9Z"/><path d="m9.2 11.7 2 2.1 3.7-4"/></svg>
+      <span>证书</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.4 2"/></svg>
+      <span>任务</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8.5h11M18.5 8.5H20M4 15.5h3M10.5 15.5H20"/><circle cx="16.6" cy="8.5" r="1.9"/><circle cx="8.6" cy="15.5" r="1.9"/></svg>
+      <span>设置</span>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+</div>
+
+<!-- ============ P2 应用详情 ============ -->
+<div class="frame"><div class="cap">02 · 应用详情</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="nav">
+    <div class="back"><svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.2 1.6 1.6 8.5l6.6 6.9"/></svg></div>
+    <div class="title">应用详情</div>
+  </div>
+
+  <div class="g-purple" style="position:absolute;left:16px;top:114px;width:84px;height:84px;border-radius:20px;display:flex;align-items:center;justify-content:center;color:#fff">
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="6" width="16" height="2.5" rx="1.25"/><rect x="4" y="11" width="12.5" height="2.5" rx="1.25"/><rect x="4" y="16" width="8" height="2.5" rx="1.25"/></svg>
+  </div>
+  <div style="position:absolute;left:114px;top:120px;font:700 21px/26px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif;letter-spacing:-.4px;white-space:nowrap">Quantum Notes</div>
+  <div class="dim" style="position:absolute;left:114px;top:148px;font:400 14px/19px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif;white-space:nowrap">v2.4.1 · 24.6 MB · 效率</div>
+  <div style="position:absolute;left:114px;top:171.5px;display:flex;gap:6px;white-space:nowrap">
+    <span class="badge ok">已签名</span>
+    <span class="badge blue">个人证书</span>
+  </div>
+
+  <!-- 签名信息 -->
+  <div class="card" style="top:214.5px;height:162.2px">
+    <div class="t13 dim" style="position:absolute;left:16px;top:11px">签名信息</div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:34px"></div>
+    <div class="kvrow" style="top:34px"><span class="t13 dim">签名证书</span><span class="t13" style="font-weight:600;color:var(--ink)">个人开发者证书</span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:77.2px"></div>
+    <div class="kvrow" style="top:77.2px"><span class="t13 dim">Bundle ID</span><span class="t13" style="font-weight:600;color:var(--ink)">com.quantum.notes</span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:120.4px"></div>
+    <div class="kvrow" style="top:120.4px"><span class="t13 dim">签名时间</span><span class="t13" style="font-weight:600;color:var(--ink)">2026年8月10日</span></div>
+  </div>
+
+  <!-- 剩余 -->
+  <div class="card" style="top:393.5px;height:97.4px">
+    <div class="t17" style="position:absolute;left:16px;top:14.5px">剩余 87 天</div>
+    <div class="t13 dim" style="position:absolute;right:16px;top:17px">2026年12月5日到期</div>
+    <div class="bar" style="position:absolute;left:16px;right:16px;top:48.4px"><i style="width:62%;background:var(--green)"></i></div>
+    <div class="t13" style="position:absolute;left:16px;top:65px;color:var(--ter)">将于到期前 7 天自动提醒重新签名</div>
+  </div>
+
+  <div class="btn primary" style="left:16px;top:507px;width:244.2px">重新签名</div>
+  <div class="btn ghost" style="left:273px;top:507.2px;width:103.6px">卸载</div>
+
+  <div class="sec" style="top:573.1px">签名记录<span class="r">3 次</span></div>
+
+  <div class="card" style="top:605.6px;height:173.2px">
+    <div class="logrow" style="top:0">
+      <span class="dot" style="background:var(--green)"></span>
+      <span class="ttl t15" style="font-weight:600">重新签名 · 成功</span>
+      <span class="sub t13 dim">更新至 v2.4.1 · 证书 8F2K9D</span>
+      <span class="date t13 dim">10月12日</span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:57.6px"></div>
+    <div class="logrow" style="top:58.6px">
+      <span class="dot" style="background:var(--green)"></span>
+      <span class="ttl t15" style="font-weight:600">首次签名 · 成功</span>
+      <span class="sub t13 dim">导入 IPA 并安装到设备</span>
+      <span class="date t13 dim">8月10日</span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:116.2px"></div>
+    <div class="logrow" style="top:117.2px">
+      <span class="dot" style="background:var(--red)"></span>
+      <span class="ttl t15" style="font-weight:600">更新签名 · 失败</span>
+      <span class="sub t13 dim">证书已过期 · 需重新签名</span>
+      <span class="date t13 dim">7月28日</span>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+</div>
+
+<!-- ============ P3 签名配置 ============ -->
+<div class="frame"><div class="cap">03 · 签名配置</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="nav">
+    <div class="lead">取消</div>
+    <div class="title">签名配置</div>
+  </div>
+
+  <!-- 文件 -->
+  <div class="card" style="top:114.2px;height:71.5px">
+    <div class="iconbox" style="position:absolute;left:16px;top:15.7px">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></svg>
+    </div>
+    <div class="t17" style="position:absolute;left:68px;top:14px">QuantumNotes.ipa</div>
+    <div class="t13 dim" style="position:absolute;left:68px;top:38px">24.6 MB · 今天 18:40 导入</div>
+    <div class="t15" style="position:absolute;right:16px;top:23px;color:var(--blue);font-weight:600">更换</div>
+  </div>
+
+  <div class="sec" style="top:201.7px">签名证书</div>
+
+  <div class="card" style="top:234.2px;height:61.9px">
+    <div class="iconbox" style="position:absolute;left:16px;top:11px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.8 5.6v6.1c0 4.3 3 8.2 7.2 9.5 4.2-1.3 7.2-5.2 7.2-9.5V5.6L12 2.8Z"/><path d="m8.9 11.9 2.2 2.2 4-4.3"/></svg>
+    </div>
+    <div class="t17" style="position:absolute;left:68px;top:10px">个人开发者证书</div>
+    <div class="t13 dim" style="position:absolute;left:68px;top:33px">剩余 123 天 · 设备 2/3</div>
+    <div style="position:absolute;right:16px;top:22px"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></div>
+  </div>
+
+  <div class="sec" style="top:312px">应用信息</div>
+
+  <div class="card" style="top:344.5px;height:138.2px">
+    <div class="row46" style="top:0"><span class="l t17">显示名称</span><span class="r t15">Quantum Notes</span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:46px"></div>
+    <div class="row46" style="top:46.4px"><span class="l t17">Bundle ID</span><span class="r t15">com.quantum.notes</span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:92.4px"></div>
+    <div class="row46" style="top:92.8px"><span class="l t17">版本号</span><span class="r t15">2.4.1 (156)</span></div>
+  </div>
+
+  <div class="sec" style="top:498.7px">高级选项</div>
+
+  <div class="card" style="top:531.2px;height:118.5px">
+    <div class="setrow" style="height:59px"><span class="l t17">签名完成后自动安装</span><span class="switch on"><i></i></span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:59px"></div>
+    <div class="setrow" style="top:59.4px;height:59px"><span class="l t17">保留原始应用图标</span><span class="switch"><i></i></span></div>
+  </div>
+
+  <div class="footnote" style="top:672px">预计耗时 30 秒 · 签名完成后自动安装到本机</div>
+
+  <div class="btn primary" style="left:16px;top:768px;width:361px;height:51.8px;font-size:17px">开始签名</div>
+  <div class="homebar"></div>
+</div>
+</div>
+
+<!-- ============ P4 证书 ============ -->
+<div class="frame"><div class="cap">04 · 证书</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="bigtitle">证书</div>
+  <div class="roundbtn" style="left:342.6px;top:66.7px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </div>
+
+  <div class="card" style="top:122.4px;height:112.3px">
+    <div class="iconbox" style="position:absolute;left:16px;top:14px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.8 5.6v6.1c0 4.3 3 8.2 7.2 9.5 4.2-1.3 7.2-5.2 7.2-9.5V5.6L12 2.8Z"/><path d="m8.9 11.9 2.2 2.2 4-4.3"/></svg>
+    </div>
+    <div class="t17" style="position:absolute;left:68px;top:15px">个人开发者证书</div>
+    <div class="badge blue" style="position:absolute;right:16px;top:24px">默认</div>
+    <div class="t13 dim" style="position:absolute;left:16px;top:64.5px">Team 8F2K9D · Apple ID</div>
+    <div class="t13s" style="position:absolute;right:16px;top:64.5px;color:var(--blue)">剩余 123 天</div>
+    <div class="bar" style="position:absolute;left:16px;right:16px;top:93px"><i style="width:62%"></i></div>
+  </div>
+
+  <div class="card" style="top:253.4px;height:112.3px">
+    <div class="iconbox" style="position:absolute;left:16px;top:14px;background:var(--orangeB);color:var(--orange)">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5.5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2V21"/><path d="M15 10h3a2 2 0 0 1 2 2v9"/><path d="M3 21h18"/><path d="M8.6 7.4h2.6M8.6 11.4h2.6"/></svg>
+    </div>
+    <div class="t17" style="position:absolute;left:68px;top:15px">企业证书 · In-House</div>
+    <div class="badge warn" style="position:absolute;right:16px;top:24px">即将到期</div>
+    <div class="t13 dim" style="position:absolute;left:16px;top:64.5px">Team QK72LM · 企业分发</div>
+    <div class="t13s" style="position:absolute;right:16px;top:64.5px;color:var(--orangeT)">剩余 6 天</div>
+    <div class="bar" style="position:absolute;left:16px;right:16px;top:93px"><i style="width:13%;background:var(--orange)"></i></div>
+  </div>
+
+  <div class="sec" style="top:385.9px">签名设备<span class="r">2 / 3 台</span></div>
+
+  <div class="card" style="top:418.4px;height:116.6px">
+    <div class="devrow" style="top:0">
+      <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.2" width="11" height="19.6" rx="3"/><path d="M10.4 5.2h3.2"/></svg></span>
+      <span class="ttl t17">iPhone 15 Pro</span>
+      <span class="sub t13 dim" style="letter-spacing:.2px">UDID 00008101-000A...8F3A</span>
+      <span class="tail"><span class="badge ok">已激活</span></span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:58.3px"></div>
+    <div class="devrow" style="top:59.3px">
+      <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.6" y="4.4" width="16.8" height="15.2" rx="2.4"/><path d="M9.6 19.6h4.8"/></svg></span>
+      <span class="ttl t17">iPad Air</span>
+      <span class="sub t13 dim" style="letter-spacing:.2px">UDID 00008102-000B...B21C</span>
+      <span class="tail"><span class="badge ok">已激活</span></span>
+    </div>
+  </div>
+
+  <div class="card" style="top:554.7px;height:52.8px;display:flex;align-items:center;justify-content:center;gap:5px">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.4" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg>
+    <span class="t17" style="color:var(--blue)">导入 .p12 / .mobileprovision</span>
+  </div>
+
+  <div class="card" style="top:627.2px;height:60px;background:var(--orangeB);box-shadow:none;border-radius:16px">
+    <div style="position:absolute;left:16px;top:13px;color:var(--orange)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v5.4"/><circle cx="12" cy="16.6" r="1.1" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <div class="t13" style="position:absolute;left:44px;right:14px;top:12px;color:var(--orangeT);line-height:19px">
+      企业证书签名的 App 需在「设置 &gt; 通用 &gt; VPN 与设备管理」中信任后才能运行
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg>
+      <span>应用</span>
+    </div>
+    <div class="item on">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.9 5.2 5.6v6c0 4.1 2.8 7.9 6.8 9.2 4-1.3 6.8-5.1 6.8-9.2v-6L12 2.9Z"/><path d="m9.2 11.7 2 2.1 3.7-4"/></svg>
+      <span>证书</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.4 2"/></svg>
+      <span>任务</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8.5h11M18.5 8.5H20M4 15.5h3M10.5 15.5H20"/><circle cx="16.6" cy="8.5" r="1.9"/><circle cx="8.6" cy="15.5" r="1.9"/></svg>
+      <span>设置</span>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+</div>
+
+<!-- ============ P5 任务 ============ -->
+<div class="frame"><div class="cap">05 · 任务</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="bigtitle">任务</div>
+  <div class="t15" style="position:absolute;right:16px;top:70px;color:var(--blue);font-weight:600">清空已完成</div>
+
+  <!-- 进度 -->
+  <div class="card" style="top:122.4px;height:230.3px">
+    <div style="position:absolute;left:123.6px;top:26.7px;width:114px;height:114px">
+      <svg width="114" height="114" viewBox="0 0 114 114">
+        <circle cx="57" cy="57" r="52" fill="none" stroke="#EDEDF2" stroke-width="10"/>
+        <circle cx="57" cy="57" r="52" fill="none" stroke="#0079FF" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="104.5"
+                transform="rotate(-90 57 57)"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                  font:700 28px/1 -apple-system,'PingFang SC','Microsoft YaHei',sans-serif;letter-spacing:-.5px">68%</div>
+    </div>
+    <div class="t17" style="position:absolute;left:16px;right:16px;top:156px;text-align:center;font-size:17px">正在签名</div>
+    <div class="t13 dim" style="position:absolute;left:16px;right:16px;top:183px;text-align:center">QuantumNotes.ipa · 24.6 MB</div>
+  </div>
+
+  <!-- 步骤 -->
+  <div class="card" style="top:371.4px;height:153.6px">
+    <div class="steprow" style="top:8px">
+      <span class="ico" style="color:var(--green)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="m7.4 12.2 3 3 6.1-6.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="lbl t15">解压 IPA 安装包</span>
+      <span class="st t13" style="color:var(--greenT)">已完成</span>
+    </div>
+    <div class="steprow" style="top:42.4px">
+      <span class="ico" style="color:var(--green)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="m7.4 12.2 3 3 6.1-6.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="lbl t15">校验描述文件</span>
+      <span class="st t13" style="color:var(--greenT)">已完成</span>
+    </div>
+    <div class="steprow" style="top:76.8px">
+      <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="46 100"><circle cx="12" cy="12" r="8.4"/></svg></span>
+      <span class="lbl t15" style="color:var(--blue);font-weight:600">使用证书重签名</span>
+      <span class="st t13" style="color:var(--blue)">进行中</span>
+    </div>
+    <div class="steprow" style="top:111.2px">
+      <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D2D2D8" stroke-width="2"><circle cx="12" cy="12" r="8.4"/></svg></span>
+      <span class="lbl t15 dim">打包并安装到设备</span>
+      <span class="st t13 dim">等待中</span>
+    </div>
+  </div>
+
+  <div class="card" style="top:544.2px;height:45.6px;display:flex;align-items:center;justify-content:center;border-radius:16px">
+    <span class="t17" style="color:var(--red)">取消任务</span>
+  </div>
+
+  <div class="card" style="top:609.4px;height:132.4px">
+    <div class="kv" style="top:0"><span class="k t15">目标设备</span><span class="val t15" style="font-weight:600">iPhone 15 Pro</span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:44px"></div>
+    <div class="kv" style="top:44px"><span class="k t15">使用证书</span><span class="val t15" style="font-weight:600">个人开发者证书</span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:88px"></div>
+    <div class="kv" style="top:88px"><span class="k t15">开始时间</span><span class="val t15" style="font-weight:600">今天 18:42</span></div>
+  </div>
+
+  <div class="tabbar">
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg>
+      <span>应用</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.9 5.2 5.6v6c0 4.1 2.8 7.9 6.8 9.2 4-1.3 6.8-5.1 6.8-9.2v-6L12 2.9Z"/><path d="m9.2 11.7 2 2.1 3.7-4"/></svg>
+      <span>证书</span>
+    </div>
+    <div class="item on">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.4 2"/></svg>
+      <span>任务</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8.5h11M18.5 8.5H20M4 15.5h3M10.5 15.5H20"/><circle cx="16.6" cy="8.5" r="1.9"/><circle cx="8.6" cy="15.5" r="1.9"/></svg>
+      <span>设置</span>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+</div>
+
+<!-- ============ P6 设置 ============ -->
+<div class="frame"><div class="cap">06 · 设置</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="bigtitle">设置</div>
+
+  <!-- 账号 -->
+  <div class="card" style="top:120.4px;height:67.2px">
+    <div class="g-avatar" style="position:absolute;left:14px;top:13.6px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.4" r="3.6"/><path d="M4.8 20.2c0-3.6 3.2-6.2 7.2-6.2s7.2 2.6 7.2 6.2" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <div class="t17" style="position:absolute;left:66px;top:12px">quantum@icloud.com</div>
+    <div class="t13 dim" style="position:absolute;left:66px;top:36px">证书同步已开启 · 5 个应用</div>
+    <div class="badge ok" style="position:absolute;right:34px;top:24px">已登录</div>
+    <div style="position:absolute;right:16px;top:26px"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></div>
+  </div>
+
+  <div class="sec" style="top:203.6px">签名</div>
+
+  <div class="card" style="top:236.1px;height:161.7px">
+    <div class="setrow" style="height:53.9px">
+      <span class="l t17">默认证书</span>
+      <span class="v t15">个人开发者证书</span>
+      <span class="tag"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:53.9px"></div>
+    <div class="setrow" style="top:54.3px;height:53.9px"><span class="l t17">到期前自动提醒</span><span class="switch on"><i></i></span></div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:108.2px"></div>
+    <div class="setrow" style="top:108.6px;height:53.9px"><span class="l t17">保留签名记录</span><span class="switch on"><i></i></span></div>
+  </div>
+
+  <div class="sec" style="top:413.8px">设备</div>
+
+  <div class="card" style="top:446.3px;height:134.8px">
+    <div class="setrow" style="height:47.5px">
+      <span class="l t17">设备名称</span>
+      <span class="v t15">iPhone 15 Pro · iOS 18.2</span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:47.5px"></div>
+    <div class="setrow" style="top:48px;height:47.5px">
+      <span class="l t17">UDID</span>
+      <span class="v t15" style="font-weight:600;color:var(--ink);letter-spacing:.2px">00008101-000A2F8C8F3A</span>
+      <span style="margin-left:8px;display:inline-flex;align-items:center;gap:4px;background:var(--tint);color:var(--blue);
+                   font:500 12px/1 -apple-system,'PingFang SC',sans-serif;padding:5px 8px;border-radius:7px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="12" height="12" rx="2.6"/><path d="M6.5 15.5H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8.5a2 2 0 0 1 2 2v1.5"/></svg>
+        复制
+      </span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:95.5px"></div>
+    <div class="t13" style="position:absolute;left:16px;right:16px;top:104px;color:var(--ter);font-size:12px">添加新设备后需重新签名，才能安装到该设备</div>
+  </div>
+
+  <div class="sec" style="top:597.1px">通用</div>
+
+  <div class="card" style="top:629.6px;height:92.6px">
+    <div class="setrow" style="height:46px">
+      <span class="l t17">外观</span>
+      <span class="v t15">跟随系统</span>
+      <span class="tag"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:16px;top:46px"></div>
+    <div class="setrow" style="top:46.4px;height:46px">
+      <span class="l t17">清理缓存</span>
+      <span class="v t15">1.2 GB</span>
+      <span class="tag"><svg class="chev" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 6 6-6 6"/></svg></span>
+    </div>
+  </div>
+
+  <div class="footnote" style="top:740px;font-size:12px">Signdrop v1.2.0 · 本地签名，数据不出设备</div>
+
+  <div class="tabbar">
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg>
+      <span>应用</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.9 5.2 5.6v6c0 4.1 2.8 7.9 6.8 9.2 4-1.3 6.8-5.1 6.8-9.2v-6L12 2.9Z"/><path d="m9.2 11.7 2 2.1 3.7-4"/></svg>
+      <span>证书</span>
+    </div>
+    <div class="item">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.4 2"/></svg>
+      <span>任务</span>
+    </div>
+    <div class="item on">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8.5h11M18.5 8.5H20M4 15.5h3M10.5 15.5H20"/><circle cx="16.6" cy="8.5" r="1.9"/><circle cx="8.6" cy="15.5" r="1.9"/></svg>
+      <span>设置</span>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+</div>
+
+<!-- ============ P7 登录 ============ -->
+<div class="frame"><div class="cap">07 · 登录</div>
+<div class="phone">
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="glyphs">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.6" y="5" width="3" height="6" rx="1"/><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.8" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.9 7.8a3.1 3.1 0 0 1 4.2 0L8 10.2Zm-4-4.6L2.4 3.7a8.1 8.1 0 0 1 11.2 0L12 5.6a5.6 5.6 0 0 0-8 0Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="2" fill="currentColor"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="g-avatar" style="position:absolute;left:24px;top:180px;width:68px;height:68px;border-radius:20px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 10px 24px rgba(109,106,248,.28)">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.4 4.9 5.2v6.1c0 4.2 3 8.1 7.1 9.4 4.1-1.3 7.1-5.2 7.1-9.4V5.2L12 2.4Z"/><path d="m8.9 11.6 2.2 2.2 4-4.3"/></svg>
+  </div>
+
+  <div class="bigtitle" style="top:259px;left:24px;font-size:28px;line-height:34px">欢迎回来</div>
+  <div class="t15 dim" style="position:absolute;left:24px;top:308px">登录后可跨设备同步证书与签名记录</div>
+
+  <!-- 输入 -->
+  <div class="card" style="top:348.4px;left:24px;width:344.1px;height:100.3px">
+    <div class="fieldrow" style="top:0">
+      <span style="color:var(--sub)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="5" width="18.4" height="14" rx="3"/><path d="m4.4 8 6.6 4.6a2 2 0 0 0 2 0L19.6 8"/></svg></span>
+      <span class="ph t15" style="font-size:16px">quantum@icloud.com</span>
+    </div>
+    <div class="divider" style="position:absolute;left:16px;right:0;top:50px"></div>
+    <div class="fieldrow" style="top:50.3px">
+      <span style="color:var(--sub)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.4" width="16" height="10.6" rx="3"/><path d="M8 10.4V7.6a4 4 0 0 1 8 0v2.8"/></svg></span>
+      <span class="ph t15" style="font-size:17px;letter-spacing:2px;padding-bottom:4px">••••••••</span>
+      <span style="color:#B6B6BC"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3.1"/></svg></span>
+    </div>
+  </div>
+
+  <div class="t13s" style="position:absolute;right:24px;top:466px;color:var(--blue);font-size:13px">忘记密码?</div>
+
+  <div class="btn primary" style="left:24px;top:501.4px;width:345px;height:51.3px;font-size:17px">登录</div>
+
+  <div style="position:absolute;left:24px;right:24px;top:577px;display:flex;align-items:center;gap:12px">
+    <div style="flex:1;height:1px;background:#E2E2E8"></div>
+    <span class="t13" style="color:var(--ter)">或使用</span>
+    <div style="flex:1;height:1px;background:#E2E2E8"></div>
+  </div>
+
+  <div class="btn apple" style="left:24px;top:604.6px;width:345px;height:51.3px;gap:8px">
+    <svg width="18" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.9-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7 1.3 0 1.7.7 2.9.7 1.2 0 1.9-1.1 2.7-2.2.8-1.2 1.1-2.4 1.2-2.4-.1 0-2-.8-2-3.5ZM14.3 5.4c.6-.8 1-1.9.9-3-.9 0-2 .6-2.7 1.4-.6.7-1 1.8-.9 2.9 1 .1 2.1-.5 2.7-1.3Z"/></svg>
+    <span>通过 Apple 继续</span>
+  </div>
+
+  <div class="card" style="top:674.2px;left:24px;width:344.1px;height:60px;display:flex;align-items:center;justify-content:space-around">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 5.1 5.4v6c0 4.1 2.8 7.9 6.9 9.2 4.1-1.3 6.9-5.1 6.9-9.2v-6L12 2.6Z"/></svg>
+      <span style="font:400 11px/1 -apple-system,'PingFang SC',sans-serif;color:var(--sub)">本地签名</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.6" y="10.4" width="14.8" height="10.2" rx="3"/><path d="M8.4 10.4V7.8a3.6 3.6 0 0 1 7.2 0v2.6"/></svg>
+      <span style="font:400 11px/1 -apple-system,'PingFang SC',sans-serif;color:var(--sub)">私钥不上传</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5H18a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-3.5"/><path d="m9.5 8.2-4 3.8 4 3.8"/><path d="M5.8 12H15"/></svg>
+      <span style="font:400 11px/1 -apple-system,'PingFang SC',sans-serif;color:var(--sub)">随时可退出</span>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:16px;right:16px;top:748px;text-align:center">
+    <span class="t13" style="color:var(--sub);font-size:13px">还没有账号？</span>
+    <span class="t13s" style="color:var(--blue);font-size:13px;margin-left:6px">立即注册</span>
+  </div>
+
+  <div class="homebar"></div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

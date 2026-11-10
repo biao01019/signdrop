@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+data/
+demo/
+config.json
+tools/zsign
+tools/zsign.exe
+
+# 设计稿比对用的中间图，只保留 index.html
+docs/ui/*.png
+
+# XcodeGen 生成物与构建产物
+ios/*.xcodeproj
+ios/build/
+ios/SignKit/.build/
+ios/SignKit-unsigned.ipa
+*.ipa
+
+.DS_Store
