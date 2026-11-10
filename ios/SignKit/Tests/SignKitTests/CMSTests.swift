@@ -43,8 +43,10 @@ final class CMSTests: XCTestCase {
             "-noverify",
             "-binary"
         ])
+        // 带 -binary 时 openssl 把校验通过的内容原样吐到 stdout，
+        // 成功与否看退出码（非 0 会被 Shell.run 直接抛错）。
         XCTAssertTrue(
-            output.contains("Verification successful"),
+            output.contains("SignKit code directory placeholder") || output.contains("Verification successful"),
             "openssl 校验失败，输出：\(output)"
         )
     }
@@ -88,10 +90,18 @@ final class CMSTests: XCTestCase {
         try Data(signature).write(to: sigURL)
 
         let dump = try Shell.run(openssl, ["asn1parse", "-inform", "DER", "-in", sigURL.path])
-        // contentType 与 messageDigest 是 Apple 强制要求的认证属性
-        XCTAssertTrue(dump.contains("1.2.840.113549.1.9.3"), "缺少 contentType 属性")
-        XCTAssertTrue(dump.contains("1.2.840.113549.1.9.4"), "缺少 messageDigest 属性")
-        XCTAssertTrue(dump.contains("pkcs7-signedData"), "外壳不是 SignedData")
+        // contentType 与 messageDigest 是 Apple 强制要求的认证属性。
+        // asn1parse 对已知 OID 打印名字而非点分数字，两种形式都接受。
+        XCTAssertTrue(
+            dump.contains("1.2.840.113549.1.9.3") || dump.contains("contentType"),
+            "缺少 contentType 属性"
+        )
+        XCTAssertTrue(
+            dump.contains("1.2.840.113549.1.9.4") || dump.contains("messageDigest"),
+            "缺少 messageDigest 属性"
+        )
+        XCTAssertTrue(dump.contains("pkcs7-signedData") || dump.contains("1.2.840.113549.1.7.2"),
+                      "外壳不是 SignedData")
     }
 
     // MARK: - 辅助
