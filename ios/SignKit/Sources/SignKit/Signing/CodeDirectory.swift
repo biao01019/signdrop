@@ -176,10 +176,10 @@ public enum CodeDirectoryBuilder {
         blob.append(options.hashType.rawValue)
         blob.append(0) // platform
         blob.append(UInt8(log2PageSize(pageSize)))
-        BigEndian.append(0, to: &blob)  // spare2
-        BigEndian.append(0, to: &blob)  // scatterOffset
+        BigEndian.append(UInt32(0), to: &blob)  // spare2
+        BigEndian.append(UInt32(0), to: &blob)  // scatterOffset
         BigEndian.append(UInt32(teamOffset), to: &blob)
-        BigEndian.append(0, to: &blob)  // spare3
+        BigEndian.append(UInt32(0), to: &blob)  // spare3
         BigEndian.append(UInt64(limit), to: &blob)
         BigEndian.append(options.execSegBase, to: &blob)
         BigEndian.append(options.execSegLimit, to: &blob)
