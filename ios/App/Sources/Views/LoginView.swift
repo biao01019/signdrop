@@ -154,10 +154,11 @@ struct LoginView: View {
                             .foregroundColor(Palette.ink)
                             .padding(.bottom, 4)
                     }
+                    // 注意：View 上的 .kerning 是 iOS 16 API，输入控件不能加，
+                    // 密码圆点的字距只作用在占位 Text 上。
                     if showsPassword {
                         TextField("", text: $password)
                             .font(.system(size: 17))
-                            .kerning(2)
                             .foregroundColor(Palette.ink)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
@@ -165,7 +166,6 @@ struct LoginView: View {
                     } else {
                         SecureField("", text: $password)
                             .font(.system(size: 17))
-                            .kerning(2)
                             .foregroundColor(Palette.ink)
                             .focused($focused, equals: .password)
                     }
