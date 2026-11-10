@@ -70,18 +70,56 @@ public struct DERScanner {
 }
 
 /// 一个可用的签名身份：私钥 + 证书链。
+///
+/// 私钥有两种来源：
+///   - 用户导入的 p12 → 走 `SecIdentity`，能顺带拿到证书链
+///   - Apple ID 登录后在设备上现生成的密钥 → 直接持有 `SecKey`，没有 SecIdentity
+///
+/// iOS 上 `SecIdentityCreateWithCertificate` 不可用，从 Keychain 里单独取出的私钥和
+/// 证书没法拼成 SecIdentity，所以这里统一收敛到「私钥 + 证书」，CMS 签名只依赖这两样。
 public struct SigningIdentity {
 
-    public let identity: SecIdentity
+    public let identity: SecIdentity?
+    public let privateKey: SecKey
     public let certificates: [SecCertificate]
     public let commonName: String
     public let teamID: String?
 
     public init(identity: SecIdentity, certificates: [SecCertificate], teamID: String?) throws {
+        var key: SecKey?
+        guard SecIdentityCopyPrivateKey(identity, &key) == errSecSuccess,
+              let resolved = key else {
+            throw SignError.identity("无法从 p12 中取出私钥")
+        }
+        try self.init(
+            privateKey: resolved,
+            certificates: certificates,
+            teamID: teamID,
+            identity: identity
+        )
+    }
+
+    /// 直接用现成的私钥构造（Apple ID 模式）。
+    public init(privateKey: SecKey, certificates: [SecCertificate], teamID: String?) throws {
+        try self.init(
+            privateKey: privateKey,
+            certificates: certificates,
+            teamID: teamID,
+            identity: nil
+        )
+    }
+
+    private init(
+        privateKey: SecKey,
+        certificates: [SecCertificate],
+        teamID: String?,
+        identity: SecIdentity?
+    ) throws {
         guard let leaf = certificates.first else {
             throw SignError.identity("证书链为空")
         }
         self.identity = identity
+        self.privateKey = privateKey
         self.certificates = certificates
         self.teamID = teamID
 
@@ -114,11 +152,7 @@ public enum CMSBuilder {
             throw SignError.identity("证书链为空")
         }
 
-        var privateKey: SecKey?
-        guard SecIdentityCopyPrivateKey(identity.identity, &privateKey) == errSecSuccess,
-              let key = privateKey else {
-            throw SignError.identity("无法从 p12 中取出私钥")
-        }
+        let key = identity.privateKey
 
         let issuerAndSerial = try issuerAndSerialNumber(of: leaf)
         let contentDigest = Hash.sha256(content)
