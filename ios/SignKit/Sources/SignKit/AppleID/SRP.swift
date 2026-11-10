@@ -111,7 +111,9 @@ public final class SRPClient {
 
     public func setServerValues(salt: Data, serverPublicB: Data) throws {
         let modulus = group.n
-        guard let bValue = BigUInt(serverPublicB), bValue % modulus != BigUInt(0) else {
+        // BigUInt(_: Data) 是非可选初始化器，空数据得到 0，靠下面的取模判断拦下
+        let bValue = BigUInt(serverPublicB)
+        guard bValue % modulus != BigUInt(0) else {
             throw SRPError.invalidServerPublic
         }
 
@@ -208,7 +210,7 @@ public final class SRPClient {
     }
 
     private func toInt(_ data: Data) -> BigUInt {
-        BigUInt(data) ?? BigUInt(0)
+        BigUInt(data)
     }
 
     private func hash(_ parts: Data...) -> Data {

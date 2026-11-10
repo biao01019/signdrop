@@ -101,7 +101,7 @@ final class SRPTests: XCTestCase {
 
         // 服务端：v = g^x, B = k*v + g^b
         let identity = Hash.sha256(Data("\(username):\(password)".utf8))
-        let x = BigUInt(Hash.sha256(salt + identity))!
+        let x = BigUInt(Hash.sha256(salt + identity))
         let v = group.g.power(x, modulus: group.n)
 
         func pad(_ value: BigUInt) -> Data {
@@ -113,14 +113,14 @@ final class SRPTests: XCTestCase {
             return Data(bytes)
         }
 
-        let k = BigUInt(Hash.sha256(pad(group.n) + pad(group.g)))!
+        let k = BigUInt(Hash.sha256(pad(group.n) + pad(group.g)))
         let serverB = (k * v + group.g.power(privateB, modulus: group.n)) % group.n
 
         try client.setServerValues(salt: salt, serverPublicB: pad(serverB))
 
         // 服务端独立算 S
-        let aValue = BigUInt(client.publicAValue())!
-        let u = BigUInt(Hash.sha256(pad(aValue) + pad(serverB)))!
+        let aValue = BigUInt(client.publicAValue())
+        let u = BigUInt(Hash.sha256(pad(aValue) + pad(serverB)))
         let serverS = (aValue * v.power(u, modulus: group.n)).power(privateB, modulus: group.n)
         let serverKey = Hash.sha256(pad(serverS))
 
