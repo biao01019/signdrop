@@ -105,12 +105,12 @@ final class AppModel: ObservableObject {
     init() {
         savedUDID = UserDefaults.standard.string(forKey: "signdrop.udid") ?? ""
         accountEmail = UserDefaults.standard.string(forKey: "signdrop.email") ?? ""
-        let restored = UserDefaults.standard.bool(forKey: "signdrop.signedIn") && !accountEmail.isEmpty
-        isSignedIn = restored
-        loginStage = restored ? .signedIn : .credentials
-        if restored {
-            account = Account(email: accountEmail, signedIn: true, appCount: 0)
-        }
+
+        // 登录态刻意不持久化：苹果的开发者令牌只在内存里活一次会话，
+        // 假装"还是登录状态"会让用户点获取证书时才撞上失败。
+        // 邮箱留着预填，重新登录只需再输一次密码。
+        isSignedIn = false
+        loginStage = .credentials
 
         rebuildDevices()
         loadFromStore()
@@ -277,6 +277,8 @@ final class AppModel: ObservableObject {
 
     /// 挂起等待用户输入验证码。登录流程本身还在 await 里跑着。
     private func awaitVerificationCode() async throws -> String {
+        // 等验证码期间要允许用户点按钮，所以这里把 loading 状态让出来
+        isLoggingIn = false
         loginStage = .twoFactor
         return try await withCheckedThrowingContinuation { continuation in
             self.codeContinuation = continuation
@@ -288,6 +290,7 @@ final class AppModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
         guard let continuation = codeContinuation else { return }
         codeContinuation = nil
+        isLoggingIn = true
         continuation.resume(returning: trimmed)
     }
 
@@ -305,7 +308,6 @@ final class AppModel: ObservableObject {
         isSignedIn = true
         loginStage = .signedIn
         loginError = nil
-        UserDefaults.standard.set(true, forKey: "signdrop.signedIn")
         UserDefaults.standard.set(email, forKey: "signdrop.email")
         appendLog(title: "Apple ID 登录成功", detail: email, ok: true)
     }
@@ -316,7 +318,6 @@ final class AppModel: ObservableObject {
         account = Account(email: "", signedIn: false, appCount: 0)
         accountEmail = ""
         session = nil
-        UserDefaults.standard.set(false, forKey: "signdrop.signedIn")
         UserDefaults.standard.removeObject(forKey: "signdrop.email")
     }
 
