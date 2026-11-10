@@ -63,3 +63,39 @@ docker run -d -p 6969:6969 dadoum/anisette-v3-server
 ```
 
 然后在 `AnisetteClient.defaultBaseURL` 里改成 `http://127.0.0.1:6969`。
+
+## 要做到和牛蛙助手等价，需要你提供什么
+
+牛蛙的 6 项能力里，我们已经有了 3 项（本地重签、Apple ID 登录、证书申请），
+第 1 项（首次安装）可以用 Sideloadly 平替。剩下两项——**手机端直接安装**和
+**自动续签**——都卡在同一个东西上：Network Extension。
+
+### 关键事实
+
+`com.apple.developer.networking.networkextension`（packet-tunnel-provider）
+**不需要向苹果单独申请**，付费团队在 App ID 里自助勾选即可（Apple DTS 工程师
+在开发者论坛明确说明：restricted but not managed）。免费个人团队拿不到，
+是因为免费描述文件不包含任何 restricted entitlement。
+
+所以门槛只有一条：**$99/年 的 Apple Developer Program**。
+
+### 清单
+
+| 项 | 必要性 | 用途 | 成本 |
+|---|---|---|---|
+| Apple Developer Program | **必需**（要免电脑安装就必须） | Network Extension entitlement；证书 1 年有效，不用 7 天续签 | $99/年 |
+| 设备 UDID | 必需 | 描述文件必须包含本机 UDID | 免费，手动填一次 |
+| 2FA 验证码 | 必需（每次登录） | 苹果登录第二步 | 免费 |
+| 自建 anisette 服务 | 强烈建议 | 公共实例随时可能挂，挂了就登不上 | 一台能跑 Docker 的机器，或 $5/月 VPS |
+| 域名 + HTTPS | 可选 | 只有走 OTA 分发（装到别人手机）才需要；自己用不上 | ~$10/年 |
+
+### 付费账号顺带解决的问题
+
+证书从 **7 天变 1 年**、设备上限 100 台、App ID 不再受每周 10 个限制。
+也就是说「7 天续签」这个痛点直接消失——不需要做自动续签，因为不用续签。
+
+### 明确不做的事
+
+- 企业证书（$299，只发给有 D-U-N-S 的公司）：滥用必被吊销，那是"掉签"的根源
+- 共享证书池 / 代签服务：等于把别人的账号搭进去
+- 把用户 IPA 传到服务器：签名必须全程在本机
