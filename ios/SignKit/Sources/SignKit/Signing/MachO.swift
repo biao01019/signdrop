@@ -54,7 +54,7 @@ public struct MachOImage {
     public static let lcSegment64: UInt32 = 0x19
 
     public init(data: Data) throws {
-        var raw = [UInt8](data)
+        let raw = [UInt8](data)
         guard raw.count >= 32 else {
             throw SignError.invalidMachO("文件太小，不足一个 64 位 Mach-O 头部")
         }
@@ -120,11 +120,14 @@ public struct MachOImage {
             } else if command == MachOImage.lcCodeSignature, commandSize >= 16 {
                 let dataOffset = UInt64(MachOImage.readUInt32(raw, cursor + 8))
                 let dataSize = UInt64(MachOImage.readUInt32(raw, cursor + 12))
-                signatureCommand = CodeSignatureCommand(
-                    commandOffset: cursor,
-                    dataOffset: dataOffset,
-                    dataSize: dataSize
-                )
+                // dataSize 为 0 说明这是被 strip 清空过的空壳命令，视同没有签名
+                if dataSize > 0 {
+                    signatureCommand = CodeSignatureCommand(
+                        commandOffset: cursor,
+                        dataOffset: dataOffset,
+                        dataSize: dataSize
+                    )
+                }
             }
 
             cursor += Int(commandSize)
@@ -167,6 +170,10 @@ public struct MachOImage {
 
         // 截到签名起点，把旧 CodeDirectory / CMS 一并丢掉
         bytes.removeSubrange(Int(signature.dataOffset)..<bytes.count)
+
+        // LC_CODE_SIGNATURE 命令本身要留着（不改变负载布局），但清空它指向的区域
+        MachOImage.writeUInt32(&bytes, signature.commandOffset + 8, 0)
+        MachOImage.writeUInt32(&bytes, signature.commandOffset + 12, 0)
 
         if let linkeditIndex = segments.firstIndex(where: { $0.name == "__LINKEDIT" }) {
             let old = segments[linkeditIndex]

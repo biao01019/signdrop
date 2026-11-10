@@ -109,17 +109,36 @@ final class CMSTests: XCTestCase {
             "-subj", "/CN=SignKit Test (TEAM123456)/O=SignKit"
         ])
 
-        try Shell.run(openssl, [
-            "pkcs12", "-export",
-            "-inkey", keyURL.path,
-            "-in", certURL.path,
-            "-out", p12URL.path,
-            "-passout", "pass:"
-        ])
+        // OpenSSL 3 默认用 AES-256-CBC + PBKDF2 + HMAC-SHA256 封 p12，
+        // SecPKCS12Import 只认传统的 PBE-SHA1-3DES / SHA1 MAC，否则报 -25293。
+        // 不同 openssl 发行版支持的参数不同，逐组降级尝试。
+        let passphrase = "signkit"
+        let base = ["pkcs12", "-export",
+                    "-inkey", keyURL.path, "-in", certURL.path,
+                    "-out", p12URL.path, "-passout", "pass:\(passphrase)"]
+        let variants: [[String]] = [
+            ["-legacy"],
+            ["-certpbe", "PBE-SHA1-3DES", "-keypbe", "PBE-SHA1-3DES", "-macalg", "sha1"],
+            ["-certpbe", "PBE-SHA1-3DES", "-keypbe", "PBE-SHA1-3DES"],
+            []
+        ]
+        var exported = false
+        for extra in variants {
+            do {
+                try Shell.run(openssl, base + extra)
+                exported = true
+                break
+            } catch {
+                try? FileManager.default.removeItem(at: p12URL)
+            }
+        }
+        guard exported else {
+            throw SignError.identity("无法导出测试 p12")
+        }
 
         let p12Data = try Data(contentsOf: p12URL)
         var items: CFArray?
-        let options = [kSecImportExportPassphrase as String: ""] as CFDictionary
+        let options = [kSecImportExportPassphrase as String: passphrase] as CFDictionary
         let status = SecPKCS12Import(p12Data as CFData, options, &items)
         guard status == errSecSuccess,
               let array = items as? [[String: Any]],
