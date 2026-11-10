@@ -1,0 +1,16 @@
+name: probe4
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  a:
+    name: macos-latest
+    runs-on: macos-latest
+    steps:
+      - run: sw_vers
+  b:
+    name: macos-15
+    runs-on: macos-15
+    steps:
+      - run: sw_vers
