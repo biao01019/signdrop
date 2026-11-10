@@ -30,44 +30,26 @@ Windows 上没有这套工具链，也没有任何替代品——这不是方案
 
 ## 路线 A：GitHub Actions + Sideloadly（Windows 用户走这条）
 
-### A1. 建仓库、推代码
+### A1. 仓库和构建已经就绪
 
-在 [github.com/new](https://github.com/new) 建一个**私有**仓库（名字随意，比如 `signdrop`），不要勾选任何模板。
+代码已经在 [github.com/biao01019/signdrop](https://github.com/biao01019/signdrop)，
+每次 push 到 `main` 会自动跑一次构建。当前仓库是**公开**的（私有仓库要绑付款方式才能用 macOS 机器）。
 
-然后在项目根目录（有 `ios/` 和 `.github/` 的那一层）执行：
+### A2. 下载已经编好的 IPA
 
-```bash
-git init
-git add .
-git commit -m "init"
-git branch -M main
-git remote add origin https://github.com/<你的账号>/signdrop.git
-git push -u origin main
-```
-
-第一次 push 会弹浏览器让你登录 GitHub，登录一次以后就记住了。
-
-> 私有仓库完全够用。Actions 对私有仓库同样免费（每月 2000 分钟，这个工程一次编译约 4 分钟）。
-
-### A2. 等它编译
-
-push 上去后自动开始跑：仓库页 → **Actions** → 左侧 `build`。
-
-两个任务按顺序执行：
-
-1. `核心逻辑测试` —— 跑 SignKit 的单元测试（DER、Mach-O 注入、CMS 签名）
-2. `编译并打包未签名 IPA` —— `xcodegen` 生成工程 → `xcodebuild` 编译 → 打包成 `SignKit-unsigned.ipa`
-
-绿了之后，IPA 挂在 **Releases → latest** 上，直链长这样：
+直链（浏览器直接打开就下载，不用登录）：
 
 ```
-https://github.com/<你的账号>/signdrop/releases/download/latest/SignKit-unsigned.ipa
+https://github.com/biao01019/signdrop/releases/download/latest/SignKit-unsigned.ipa
 ```
 
-浏览器直接打开就下载，不用登录。
+构建流程是：`xcodegen` 生成工程 → `xcodebuild` 编译（`CODE_SIGNING_ALLOWED=NO`）→
+打包成 `SignKit-unsigned.ipa` → 挂到 **Releases → latest**（同名文件自动覆盖）。
 
-> 编译失败的话把 Actions 里的 `build-log` 下下来，是 Swift 编译错误，改完再 push 一次即可。
-> 这份工程是本机（Windows）写的，没经过编译器验证，第一次很可能有几处要修。
+改完代码想重新出包，在仓库页 → **Actions** → 左侧 `build` → **Run workflow** 即可，约 4 分钟。
+
+> 编译失败时，`build-log` 里是完整 Swift 编译输出；工作流会把 `error:` 行摘到日志末尾，方便定位。
+
 
 ### A3. 用 Sideloadly 签名安装（Windows）
 

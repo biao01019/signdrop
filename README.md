@@ -5,14 +5,23 @@
 
 ## 想让它出现在你手机桌面上？
 
-iOS 的 App 必须由 macOS 上的 Xcode 编译一次，Windows 上做不了——这是苹果的工具链限制。
-所以顺序是：**借 GitHub 的 macOS 机器编译 → 得到一个未签名 IPA → 用你自己的 Apple ID 签一次装进手机**。
+**已经编好了，直接下：**
 
-完整步骤（含 Windows 上的 Sideloadly 操作、7 天续签、免费账号的限制）在
+```
+https://github.com/biao01019/signdrop/releases/download/latest/SignKit-unsigned.ipa
+```
+
+这是**未签名**的包，还要用你自己的 Apple ID 签一次才能装进 iPhone。
+
+iOS 的 App 必须由 macOS 上的 Xcode 编译一次，Windows 上做不了——这是苹果的工具链限制。
+这里的做法是让 GitHub 的 macOS 机器替我们编（`.github/workflows/ios-build.yml`），
+你只负责最后一步签名安装。
+
+完整步骤（Windows 上的 Sideloadly 操作、7 天续签、免费账号的限制）在
 **[docs/install-ios.md](docs/install-ios.md)**，大约 15 分钟。
 
 ```
-push 到 GitHub → Actions 自动编译 → 下载 SignKit-unsigned.ipa → Sideloadly 填入 Apple ID → 装好
+下载 IPA → Sideloadly 填入 Apple ID → 装好 → 信任开发者描述文件
 ```
 
 装进去之后，签名、改 Bundle ID、续签全部在手机上完成，不用再碰电脑。
