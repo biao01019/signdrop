@@ -219,8 +219,8 @@ struct CertsView: View {
 
 struct CertImportView: View {
     @EnvironmentObject private var model: AppModel
-    @Environment(\.presentationMode) private var presentationMode
 
+    @State private var udid = ""
     @State private var p12Data: Data?
     @State private var p12Name = ""
     @State private var profileData: Data?
@@ -233,7 +233,45 @@ struct CertImportView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("证书文件")) {
+                Section(
+                    header: Text("用 Apple ID 自动获取"),
+                    footer: Text(appleFooter)
+                ) {
+                    HStack {
+                        Text("设备 UDID")
+                        Spacer()
+                        TextField("40 位或 24 位十六进制", text: $udid)
+                            .multilineTextAlignment(.trailing)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled(true)
+                            .font(.system(size: 13, design: .monospaced))
+                    }
+
+                    Button(action: startFetch) {
+                        HStack {
+                            Text(model.isFetchingCertificate ? "正在向苹果申请…" : "获取证书")
+                                .font(TypeScale.button)
+                                .foregroundColor(canFetch ? Palette.blue : Palette.ter)
+                            Spacer()
+                            if model.isFetchingCertificate {
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(!canFetch || model.isFetchingCertificate)
+
+                    if let error = model.certificateError {
+                        Text(error)
+                            .font(.system(size: 12))
+                            .foregroundColor(Palette.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Section(
+                    header: Text("手动导入 p12"),
+                    footer: Text("适用于付费开发者账号：从开发者后台导出 .p12 和 .mobileprovision 后在这里导入。私钥只保存在本机钥匙串。")
+                ) {
                     Button(action: { pickingP12 = true }) {
                         HStack {
                             Text("证书（.p12）")
@@ -267,9 +305,7 @@ struct CertImportView: View {
                         TextField("个人开发者证书", text: $label)
                             .multilineTextAlignment(.trailing)
                     }
-                }
 
-                Section(footer: Text("证书与私钥只保存在本机钥匙串，不会上传。")) {
                     Button(action: importAction) {
                         Text("导入证书")
                             .font(TypeScale.button)
@@ -279,7 +315,7 @@ struct CertImportView: View {
                     .disabled(!canImport)
                 }
             }
-            .navigationBarTitle("导入证书", displayMode: .inline)
+            .navigationBarTitle("添加证书", displayMode: .inline)
             .navigationBarItems(trailing: Button("取消") {
                 model.showsCertImport = false
             })
@@ -296,6 +332,23 @@ struct CertImportView: View {
                 profileName = url.lastPathComponent
             }
         }
+        .onAppear { udid = model.savedUDID }
+    }
+
+    private var appleFooter: String {
+        if !model.isSignedIn {
+            return "请先在登录页用 Apple ID 登录，登录后这里会直接向苹果申请证书。"
+        }
+        return "会申请一张通配符开发证书（7 天有效，可签任意 Bundle ID），私钥在本机生成。\nUDID 获取：数据线连电脑后，在 Finder 或 iTunes 里点设备信息里的序列号，会切换成 UDID；也可以用爱思助手等工具的设备页查看。"
+    }
+
+    private var canFetch: Bool {
+        model.isSignedIn && AppModel.isValidUDID(udid)
+    }
+
+    private func startFetch() {
+        model.updateUDID(udid)
+        Task { await model.fetchCertificate() }
     }
 
     private var canImport: Bool {

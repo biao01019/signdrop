@@ -68,6 +68,27 @@ final class AppState: ObservableObject {
         persistCredentials()
     }
 
+    /// Apple ID 模式拿到的证书：私钥在 Keychain，这里只落证书与描述文件。
+    func addAppleIDCredential(_ identity: AccountSession.ProvisionedIdentity) throws {
+        let credential = try Credential.makeFromAppleID(
+            label: "Apple ID · \(identity.teamID)",
+            teamID: identity.teamID,
+            commonName: identity.commonName,
+            certificate: identity.certificate,
+            profile: identity.profile,
+            keyTag: identity.keyTag
+        )
+        if let index = credentials.firstIndex(where: {
+            $0.applicationIdentifier == credential.applicationIdentifier
+                && $0.commonName == credential.commonName
+        }) {
+            credentials[index] = credential
+        } else {
+            credentials.append(credential)
+        }
+        persistCredentials()
+    }
+
     func removeCredential(_ credential: Credential) {
         credentials.removeAll { $0.id == credential.id }
         persistCredentials()

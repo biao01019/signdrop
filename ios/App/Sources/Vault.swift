@@ -66,7 +66,16 @@ enum VaultError: LocalizedError {
 }
 
 /// 一套可用于签名的凭证。
+///
+/// 私钥有两种来路：
+///   - `.p12`：用户从电脑上导入（AltServer / Sideloadly / 开发者后台导出的）
+///   - `.keychain`：App 内用 Apple ID 现申请，私钥生成在本机 Keychain，从不落文件
 struct Credential: Identifiable, Codable, Equatable {
+
+    enum KeySource: String, Codable {
+        case p12
+        case keychain
+    }
 
     var id = UUID()
     var label: String
@@ -83,6 +92,11 @@ struct Credential: Identifiable, Codable, Equatable {
     var deviceCount: Int
     var isWildcard: Bool
     var provisionsAllDevices: Bool
+
+    /// 旧数据没有这两个字段，用 optional 保持向后兼容。
+    var keySource: KeySource?
+    var keyTag: String?
+    var certificateDER: Data?
 
     var daysRemaining: Int {
         Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
@@ -108,7 +122,24 @@ struct Credential: Identifiable, Codable, Equatable {
     }
 
     func loadIdentity() throws -> SigningIdentity {
-        try Credential.readIdentity(p12: p12, password: password, teamID: teamID)
+        switch keySource ?? .p12 {
+        case .p12:
+            return try Credential.readIdentity(p12: p12, password: password, teamID: teamID)
+        case .keychain:
+            guard let tag = keyTag, !tag.isEmpty else {
+                throw SignError.identity("这条凭证没有关联的私钥，请重新获取证书")
+            }
+            guard let key = AppleCertificate.loadKey(tag: tag) else {
+                throw SignError.identity("Keychain 里的私钥已不存在（可能被系统清理），请重新获取证书")
+            }
+            guard let der = certificateDER, !der.isEmpty else {
+                throw SignError.identity("缺少证书内容，请重新获取证书")
+            }
+            guard let certificate = SecCertificateCreateWithData(nil, der as CFData) else {
+                throw SignError.identity("证书内容损坏，请重新获取")
+            }
+            return try SigningIdentity(privateKey: key, certificates: [certificate], teamID: teamID)
+        }
     }
 
     static func readIdentity(p12: Data, password: String, teamID: String) throws -> SigningIdentity {
@@ -159,6 +190,35 @@ struct Credential: Identifiable, Codable, Equatable {
             deviceCount: parsed.provisionedDevices.count,
             isWildcard: parsed.isWildcard,
             provisionsAllDevices: parsed.provisionsAllDevices
+        )
+    }
+
+    /// Apple ID 模式拿到的凭证：私钥在 Keychain，不生成 p12。
+    static func makeFromAppleID(
+        label: String,
+        teamID: String,
+        commonName: String,
+        certificate: Data,
+        profile: Data,
+        keyTag: String
+    ) throws -> Credential {
+        let parsed = try ProvisioningProfile(data: profile)
+        return Credential(
+            label: label.isEmpty ? "Apple ID 证书" : label,
+            teamID: teamID.isEmpty ? parsed.teamIdentifier : teamID,
+            commonName: commonName,
+            profileName: parsed.name,
+            applicationIdentifier: parsed.applicationIdentifier,
+            expiresAt: parsed.expirationDate,
+            p12: Data(),
+            password: "",
+            profile: profile,
+            deviceCount: parsed.provisionedDevices.count,
+            isWildcard: parsed.isWildcard,
+            provisionsAllDevices: parsed.provisionsAllDevices,
+            keySource: .keychain,
+            keyTag: keyTag,
+            certificateDER: certificate
         )
     }
 }
