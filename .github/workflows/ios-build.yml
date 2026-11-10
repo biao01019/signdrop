@@ -14,7 +14,7 @@ on:
 jobs:
   test:
     name: 核心逻辑测试
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +36,7 @@ jobs:
 
   build:
     name: 编译并打包未签名 IPA
-    runs-on: macos-14
+    runs-on: macos-15
     needs: test
     # 测试失败也继续编译：界面能装进手机先验证，签名引擎的问题单独修
     if: always()
