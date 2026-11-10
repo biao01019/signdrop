@@ -27,6 +27,8 @@ targets:
       base:
         PRODUCT_NAME: SignKit
         PRODUCT_BUNDLE_IDENTIFIER: com.signkit.app
+        # App 模块名不能与 SignKit 库同名，否则两者产物会写到同一个 .swiftmodule
+        PRODUCT_MODULE_NAME: SigndropApp
         GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
