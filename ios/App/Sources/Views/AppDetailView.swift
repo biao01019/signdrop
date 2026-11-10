@@ -6,11 +6,17 @@ struct AppDetailView: View {
     let app: AppItem
 
     @State private var showDeleteConfirm = false
+    @State private var shareURL: URL?
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                NavBar(title: "应用详情", onBack: { model.detailApp = nil })
+                NavBar(
+                    title: "应用详情",
+                    onBack: { model.detailApp = nil },
+                    trailingSymbol: app.localURL == nil ? nil : "square.and.arrow.up",
+                    onTrailing: { shareURL = app.localURL }
+                )
 
                 hero
                     .padding(.horizontal, Metrics.pagePadding)
@@ -36,6 +42,14 @@ struct AppDetailView: View {
                     .padding(.top, 16.5)
 
                 Color.clear.frame(height: 40)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { shareURL != nil },
+            set: { if !$0 { shareURL = nil } }
+        )) {
+            if let url = shareURL {
+                ShareSheet(items: [url])
             }
         }
         .confirmationDialog("卸载后会删除本地签名的安装包，手机上的 App 也会失效。",

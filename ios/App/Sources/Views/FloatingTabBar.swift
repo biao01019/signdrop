@@ -48,6 +48,8 @@ struct NavBar: View {
     var leading: String?
     var onLeading: (() -> Void)?
     var onBack: (() -> Void)?
+    var trailingSymbol: String?
+    var onTrailing: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -76,6 +78,19 @@ struct NavBar: View {
                     .buttonStyle(PlainButtonStyle())
                 }
                 Spacer()
+
+                if let symbol = trailingSymbol {
+                    Button(action: { onTrailing?() }) {
+                        ZStack {
+                            Circle().fill(Palette.tint)
+                            Image(systemName: symbol)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Palette.blue)
+                        }
+                        .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
             .padding(.horizontal, Metrics.pagePadding)
         }

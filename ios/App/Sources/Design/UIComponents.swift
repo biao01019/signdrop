@@ -266,3 +266,19 @@ struct RowButtonStyle: ButtonStyle {
             .background(configuration.isPressed ? Color.black.opacity(0.03) : Color.clear)
     }
 }
+
+
+// MARK: - 分享面板
+
+import UIKit
+
+/// 把签名好的 IPA 交给系统分享：存到「文件」、发给微信、AirDrop 给其他设备都行。
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
